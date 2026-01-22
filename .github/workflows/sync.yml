@@ -1,0 +1,41 @@
+name: Sync Affiliate Ads
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: "0 */6 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  FLEXOFFERS_API_KEY: ${{ secrets.FLEXOFFERS_API_KEY }}
+  AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
+  AWIN_PUBLISHER_ID: ${{ secrets.AWIN_PUBLISHER_ID }}
+  CJ_API_TOKEN: ${{ secrets.CJ_API_TOKEN }}
+  CJ_WEBSITE_ID: ${{ secrets.CJ_WEBSITE_ID }}
+  IMPACT_ACCOUNT_SID: ${{ secrets.IMPACT_ACCOUNT_SID }}
+  IMPACT_AUTH_TOKEN: ${{ secrets.IMPACT_AUTH_TOKEN }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        working-directory: sync-service
+        run: uv sync
+
+      - name: Run sync
+        working-directory: sync-service
+        run: uv run python src/main.py
