@@ -9,7 +9,7 @@ Hey team! Welcome to the project. Here's what I need from you right now:
 **Immediate priorities:**
 1. **Get familiar with the codebase** - Clone the repo, explore the folder structure, and read through `docs/architecture.md`
 2. **Review the architecture** - Let me know what you think! I'm open to feedback before we lock things in
-3. **Send me your info** - I need your GitHub usernames and emails so I can add you to the repo and Supabase
+3. **Send me your info** - I need your GitHub usernames and emails so I can add you to the Supabase
 
 **What to wait on:**
 - Don't start writing integration code yet - I'm finalizing the Standard Ad schema right after our kickoff meeting
