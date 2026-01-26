@@ -74,9 +74,4 @@ See `.env.example` for required variables. Key ones:
 
 ## Database Schema
 
-See `database/schema.sql`. Core tables:
-- `advertisers` - Programs from all networks
-- `ads` - Creative assets with approval workflow
-- `sites` - WordPress sites
-- `placements` - Ad slots on each site
-- `site_advertiser_rules` - Allow/deny rules per site
+TBD
