@@ -1,61 +1,84 @@
-"""Database connection and utilities."""
+"""Database connection and utilities for MySQL."""
 
 import logging
 import os
 import sys
+from contextlib import contextmanager
 
+import pymysql
 from dotenv import load_dotenv
-from psycopg_pool import ConnectionPool
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Build connection string from individual PG_* environment variables
-_conninfo = (
-    f"host={os.getenv('PG_HOST')} "
-    f"port={os.getenv('PG_PORT', '5432')} "
-    f"user={os.getenv('PG_USER')} "
-    f"password={os.getenv('PG_PASSWORD')} "
-    f"dbname={os.getenv('PG_DATABASE')} "
-    f"sslmode=require"  # Supabase requires SSL
-)
+# MySQL connection configuration from environment variables
+_config = {
+    "host": os.getenv("MYSQL_HOST", "localhost"),
+    "port": int(os.getenv("MYSQL_PORT", "3306")),
+    "user": os.getenv("MYSQL_USER"),
+    "password": os.getenv("MYSQL_PASSWORD"),
+    "database": os.getenv("MYSQL_DATABASE"),
+    "charset": "utf8mb4",
+    "cursorclass": pymysql.cursors.DictCursor,
+    "autocommit": False,
+}
 
-# Connection pool (equivalent to pg.Pool in Node.js)
-pool = ConnectionPool(
-    conninfo=_conninfo,
-    min_size=1,
-    max_size=10,  # equivalent to max: 10
-    timeout=20,   # connectionTimeoutMillis: 20000
-    max_idle=30,  # idleTimeoutMillis: 30000
-)
+# Optional SSL configuration for remote connections
+_ssl_ca = os.getenv("MYSQL_SSL_CA")
+if _ssl_ca:
+    _config["ssl"] = {"ca": _ssl_ca}
+
+
+def _create_connection():
+    """Create a new MySQL connection."""
+    return pymysql.connect(**_config)
 
 
 def test_connection() -> None:
     """Test database connection on startup."""
     try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT NOW()")
-                result = cur.fetchone()
-                logger.info(f"PostgreSQL connected at: {result[0]}")
+        conn = _create_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT NOW()")
+            result = cur.fetchone()
+            logger.info(f"MySQL connected at: {result['NOW()']}")
+        conn.close()
     except Exception as err:
-        logger.error(f"PostgreSQL connection failed: {err}")
+        logger.error(f"MySQL connection failed: {err}")
         sys.exit(1)
 
 
+@contextmanager
 def get_connection():
-    """Get a connection from the pool."""
-    return pool.connection()
+    """Get a MySQL connection (context manager).
+
+    Usage:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM ads")
+                results = cur.fetchall()
+            conn.commit()
+    """
+    conn = _create_connection()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def health_check() -> bool:
     """Verify database connection works."""
     try:
-        with pool.connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
-                result = cur.fetchone()
-                return result is not None and result[0] == 1
+        conn = _create_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 AS result")
+            result = cur.fetchone()
+            conn.close()
+            return result is not None and result["result"] == 1
     except Exception:
         return False

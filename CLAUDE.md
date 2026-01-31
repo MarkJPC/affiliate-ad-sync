@@ -11,28 +11,30 @@ Centralized system to sync affiliate ads from 4 networks to WordPress sites via 
 
 ```
 FlexOffers API ─┐
-Awin API ───────┼──► sync-service (Python) ──► Supabase Postgres
-CJ API ─────────┤                                    │
-Impact API ─────┘                                    ▼
-                                              admin-dashboard (Next.js)
-                                                     │
-                                                     ▼
-                                              CSV Export → AdRotate (WordPress)
+Awin API ───────┼──► sync-service (Python) ──► MySQL (cPanel)
+CJ API ─────────┤    [GitHub Actions cron]          │
+Impact API ─────┘                                   │
+                                                    ▼
+                                        admin-dashboard (Laravel)
+                                        [cPanel via FTP]
+                                                    │
+                                                    ▼
+                                        CSV Export → AdRotate (WordPress)
 ```
 
 ## Directory Structure
 
 - `sync-service/` - Python scheduled job (runs via GitHub Actions cron)
-- `admin-dashboard/` - Next.js admin interface (deployed on Vercel)
-- `database/` - SQL schema and seed files
+- `admin-dashboard/` - Laravel admin interface (deployed on cPanel via FTP)
+- `database/` - SQL schema and seed files (MySQL)
 - `docs/` - Architecture and API documentation
 
 ## Tech Stack
 
-- **Sync service**: Python 3.12 + uv, httpx, psycopg
-- **Admin dashboard**: Next.js 16 + TypeScript, Tailwind, shadcn/ui
-- **Database**: Supabase Postgres
-- **Hosting**: GitHub Actions (sync cron), Vercel (admin)
+- **Sync service**: Python 3.12 + uv, httpx, pymysql
+- **Admin dashboard**: Laravel + PHP, Blade templates, Laravel Breeze (auth)
+- **Database**: MySQL (cPanel/phpMyAdmin)
+- **Hosting**: GitHub Actions (sync cron), cPanel (admin dashboard)
 
 ## Common Commands
 
@@ -40,17 +42,17 @@ Impact API ─────┘                                    ▼
 ```bash
 cd sync-service
 uv sync                    # Install dependencies
-uv run python src/main.py  # Run sync manually
+uv run python -m src.main  # Run sync manually
 uv run pytest              # Run tests
 ```
 
-### Admin Dashboard
+### Admin Dashboard (Laravel)
 ```bash
 cd admin-dashboard
-npm install       # Install dependencies
-npm run dev       # Start dev server (http://localhost:3000)
-npm run build     # Build for production
-npm run lint      # Run linter
+composer install           # Install PHP dependencies
+php artisan serve          # Start dev server (http://localhost:8000)
+php artisan migrate        # Run database migrations
+npm install && npm run build  # Build frontend assets
 ```
 
 ## Code Patterns
@@ -59,19 +61,65 @@ npm run lint      # Run linter
 - `src/networks/` - API clients inherit from `NetworkClient` base class
 - `src/mappers/` - Transform API responses to canonical schema
 - Each network client implements `fetch_advertisers()` and `fetch_ads()`
+- Database: pymysql with context manager connections
 
-### admin-dashboard
-- `src/app/api/` - API routes (Next.js App Router)
-- `src/lib/controllers/` - Business logic layer
-- `src/lib/queries/` - Database queries (raw SQL with pg)
-- Pattern: routes → controllers → queries
+### admin-dashboard (Laravel)
+- `app/Http/Controllers/` - Request handlers
+- `app/Models/` - Eloquent models (Ad, Advertiser, Site, etc.)
+- `resources/views/` - Blade templates
+- `routes/web.php` - Route definitions
+- Pattern: routes → controllers → models → views
 
 ## Environment Variables
 
 See `.env.example` for required variables. Key ones:
-- `DATABASE_URL` - Supabase Postgres connection string
-- `FLEXOFFERS_API_KEY`, `AWIN_API_TOKEN`, etc. - Network API credentials
+
+### sync-service
+```
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=your_user
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=affiliate_ads
+```
+
+### admin-dashboard (Laravel)
+```
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=affiliate_ads
+DB_USERNAME=your_user
+DB_PASSWORD=your_password
+```
 
 ## Database Schema
 
-TBD
+Schema files (see `database/`):
+- `schema.mysql.sql` - MySQL 8.0+ (production on cPanel)
+- `schema.postgres.sql` - PostgreSQL (alternative for local dev)
+
+| Table | Description |
+|-------|-------------|
+| `advertisers` | Affiliate programs from all networks |
+| `ads` | Canonical ad records with AdRotate fields |
+| `sites` | WordPress sites we manage |
+| `placements` | Ad slots with dimensions per site |
+| `site_advertiser_rules` | Allow/deny advertisers per site |
+| `site_ads` | Per-site ad approval status (many-to-many) |
+| `sync_logs` | Audit trail for sync operations |
+| `export_logs` | Audit trail for CSV exports |
+
+**View**: `v_exportable_ads` - Pre-joined query for ads ready to export
+
+## Deployment
+
+### Sync Service
+- Runs on GitHub Actions cron schedule
+- Connects to cPanel MySQL remotely
+- Credentials stored in GitHub Secrets
+
+### Admin Dashboard
+- Deploy via FTP to cPanel subdomain (e.g., `admin.thepartshops.com`)
+- Document root should point to Laravel's `public/` folder
+- Run `php artisan migrate` after first deploy
