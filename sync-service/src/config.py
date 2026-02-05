@@ -1,7 +1,7 @@
 """Configuration management - loads environment variables."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
@@ -12,8 +12,8 @@ load_dotenv()
 class Config:
     """Application configuration loaded from environment."""
 
-    # FlexOffers (Mark)
-    flexoffers_api_key: str | None = None
+    # FlexOffers (Mark) - dict mapping domain -> api_key
+    flexoffers_domain_keys: dict[str, str] = field(default_factory=dict)
 
     # Awin (Nadia)
     awin_api_token: str | None = None
@@ -30,8 +30,18 @@ class Config:
 
 def load_config() -> Config:
     """Load configuration from environment variables."""
+    # Parse FLEXOFFERS_DOMAIN_KEYS env var
+    # Format: "domain1:key1,domain2:key2"
+    flexoffers_keys: dict[str, str] = {}
+    raw_keys = os.getenv("FLEXOFFERS_DOMAIN_KEYS", "")
+    if raw_keys:
+        for pair in raw_keys.split(","):
+            if ":" in pair:
+                domain, key = pair.strip().split(":", 1)
+                flexoffers_keys[domain.strip()] = key.strip()
+
     return Config(
-        flexoffers_api_key=os.getenv("FLEXOFFERS_API_KEY"),
+        flexoffers_domain_keys=flexoffers_keys,
         awin_api_token=os.getenv("AWIN_API_TOKEN"),
         awin_publisher_id=os.getenv("AWIN_PUBLISHER_ID"),
         cj_api_token=os.getenv("CJ_API_TOKEN"),
