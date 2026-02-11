@@ -157,3 +157,13 @@ ENV/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Local environment
+.env
+
+# Python build artifacts
+sync-service/build/
+__pycache__/
+
+# Local test payloads
+sync-service/*_sample.json
