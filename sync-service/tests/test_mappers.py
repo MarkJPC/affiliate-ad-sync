@@ -2,8 +2,8 @@
 
 import pytest
 
-from mappers import get_mapper
-from mappers.base import Mapper
+from src.mappers import get_mapper
+from src.mappers.base import Mapper
 
 
 class TestMapperBase:
@@ -44,33 +44,81 @@ class TestFlexOffersMapper:
     def test_map_advertiser(self):
         """Should map advertiser response correctly."""
         mapper = get_mapper("flexoffers")
-        raw = {"id": "12345", "name": "Test Advertiser", "status": "active"}
+        raw = {
+            "id": 12345,
+            "name": "Test Advertiser",
+            "programStatus": "Approved",
+            "applicationStatus": "Approved",
+            "domainUrl": "https://example.com",
+            "categoryNames": "Test Category",
+            "sevenDayEpc": "0.25",
+        }
         result = mapper.map_advertiser(raw)
 
         assert result["network"] == "flexoffers"
         assert result["network_program_id"] == "12345"
         assert result["network_program_name"] == "Test Advertiser"
         assert result["status"] == "active"
+        assert result["website_url"] == "https://example.com"
+        assert result["category"] == "Test Category"
+        assert result["epc"] == 0.25
+        assert "raw_hash" in result
 
-    def test_map_ad(self):
-        """Should map ad response correctly."""
+    def test_map_advertiser_paused_status(self):
+        """Should set status to paused when not fully approved."""
         mapper = get_mapper("flexoffers")
         raw = {
-            "id": "ad-001",
-            "name": "Summer Sale Banner",
+            "id": 12345,
+            "name": "Pending Advertiser",
+            "programStatus": "Approved",
+            "applicationStatus": "Pending",
+        }
+        result = mapper.map_advertiser(raw)
+        assert result["status"] == "paused"
+
+    def test_map_ad_banner(self):
+        """Should map banner ad response correctly."""
+        mapper = get_mapper("flexoffers")
+        raw = {
+            "linkId": 12345,
+            "linkName": "Summer Sale Banner",
+            "linkType": "Banner",
             "imageUrl": "https://example.com/banner.jpg",
-            "trackingUrl": "https://track.example.com/click",
-            "width": 300,
-            "height": 250,
+            "linkUrl": "https://track.example.com/click",
+            "bannerWidth": 300,
+            "bannerHeight": 250,
         }
         result = mapper.map_ad(raw, advertiser_id=1)
 
         assert result["network"] == "flexoffers"
-        assert result["network_link_id"] == "ad-001"
-        assert result["advertiser_id"] == 1
+        assert result["network_link_id"] == "12345"
+        assert result["network_program_id"] == "1"
         assert result["width"] == 300
         assert result["height"] == 250
-        assert "raw_hash" in result
+        assert result["creative_type"] == "banner"
+        assert result["image_url"] == "https://example.com/banner.jpg"
+        assert "raw_data" in result
+
+    def test_map_ad_text_link(self):
+        """Should map text link response correctly with 0x0 dimensions."""
+        mapper = get_mapper("flexoffers")
+        raw = {
+            "linkId": 67890,
+            "linkName": "Shop Now Text Link",
+            "linkType": "Text Link",
+            "linkUrl": "https://track.example.com/click",
+            "bannerWidth": None,
+            "bannerHeight": None,
+        }
+        result = mapper.map_ad(raw, advertiser_id=2)
+
+        assert result["network"] == "flexoffers"
+        assert result["network_link_id"] == "67890"
+        assert result["network_program_id"] == "2"
+        assert result["width"] == 0
+        assert result["height"] == 0
+        assert result["creative_type"] == "text"
+        assert result["image_url"] == ""
 
 
 class TestAwinMapper:
