@@ -26,15 +26,28 @@ Impact API ─────┘                                   │
 
 - `sync-service/` - Python scheduled job (runs via GitHub Actions cron)
 - `admin-dashboard/` - Laravel admin interface (deployed on cPanel via FTP)
-- `database/` - SQL schema and seed files (MySQL)
+- `database/` - SQL schema and seed files (MySQL, SQLite)
 - `docs/` - Architecture and API documentation
 
 ## Tech Stack
 
-- **Sync service**: Python 3.12 + uv, httpx, pymysql
+- **Sync service**: Python 3.12 + uv, httpx, pymysql/sqlite3
 - **Admin dashboard**: Laravel + PHP, Blade templates, Laravel Breeze (auth)
-- **Database**: MySQL (cPanel/phpMyAdmin)
+- **Database**: SQLite (local dev) or MySQL (production on cPanel/phpMyAdmin)
 - **Hosting**: GitHub Actions (sync cron), cPanel (admin dashboard)
+
+## Local Development Setup (SQLite)
+
+The fastest way to get started - no MySQL installation required!
+
+```bash
+# From project root
+python setup-dev-db.py          # Create fresh database
+python setup-dev-db.py --reset  # Drop and recreate
+python setup-dev-db.py --verify # Check database validity
+```
+
+Both sync-service and admin-dashboard share the same SQLite file at `database/affiliate_ads.sqlite`.
 
 ## Common Commands
 
@@ -62,7 +75,7 @@ npm install && npm run build  # Build frontend assets
 - `src/networks/` - API clients inherit from `NetworkClient` base class
 - `src/mappers/` - Transform API responses to canonical schema
 - Each network client implements `fetch_advertisers()` and `fetch_ads()`
-- Database: pymysql with context manager connections
+- Database: dual-support for SQLite (local) and MySQL (production)
 
 ### admin-dashboard (Laravel)
 - `app/Http/Controllers/` - Request handlers
@@ -77,11 +90,15 @@ See `.env.example` for required variables. Key ones:
 
 ### sync-service
 ```
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=your_user
-MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=affiliate_ads
+# LOCAL DEVELOPMENT (SQLite - default)
+DB_PATH=../database/affiliate_ads.sqlite
+
+# PRODUCTION (comment out DB_PATH, uncomment these)
+# MYSQL_HOST=localhost
+# MYSQL_USER=your_user
+# MYSQL_PASSWORD=your_password
+# MYSQL_DATABASE=affiliate_ads
+
 FLEXOFFERS_DOMAIN_KEYS=domain1:key1,domain2:key2
 ```
 
@@ -89,19 +106,26 @@ See `docs/api-notes/` for network-specific API documentation.
 
 ### admin-dashboard (Laravel)
 ```
-DB_CONNECTION=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_DATABASE=affiliate_ads
-DB_USERNAME=your_user
-DB_PASSWORD=your_password
+# LOCAL DEVELOPMENT (SQLite - default)
+DB_CONNECTION=sqlite
+DB_DATABASE=../database/affiliate_ads.sqlite
+
+# PRODUCTION (change DB_CONNECTION to mysql)
+# DB_CONNECTION=mysql
+# DB_HOST=localhost
+# DB_DATABASE=affiliate_ads
+# DB_USERNAME=your_user
+# DB_PASSWORD=your_password
 ```
 
 ## Database Schema
 
 Schema files (see `database/`):
+- `schema.sqlite.sql` - SQLite 3.x (local development - recommended)
 - `schema.mysql.sql` - MySQL 8.0+ (production on cPanel)
-- `schema.postgres.sql` - PostgreSQL (alternative for local dev)
+- `schema.postgres.sql` - PostgreSQL (alternative)
+
+**Database Detection**: If `DB_PATH` env var is set → SQLite, else use `MYSQL_*` vars → MySQL
 
 | Table | Description |
 |-------|-------------|

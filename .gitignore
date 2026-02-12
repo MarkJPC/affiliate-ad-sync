@@ -167,3 +167,9 @@ __pycache__/
 
 # Local test payloads
 sync-service/*_sample.json
+
+# SQLite database files (local development)
+database/*.sqlite
+database/*.sqlite-journal
+database/*.sqlite-wal
+database/*.sqlite-shm

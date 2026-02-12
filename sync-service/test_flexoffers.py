@@ -1,111 +1,160 @@
-"""Test script for FlexOffers API client - full sync flow demo."""
+"""End-to-end test: FlexOffers API → SQLite database → verification."""
 
-import json
 import logging
+import subprocess
+import sys
+from pathlib import Path
 
 from src.networks.flexoffers import FlexOffersClient
-from src.mappers.flexoffers import FlexOffersMapper
 from src.config import load_config
+from src.db import get_connection, _execute_query, _use_sqlite
 
-# Enable debug logging to see API request details
-logging.basicConfig(level=logging.DEBUG, format='%(name)s - %(levelname)s - %(message)s')
+# Minimal logging (only warnings and errors)
+logging.basicConfig(level=logging.WARNING, format='%(name)s - %(levelname)s - %(message)s')
 
-config = load_config()
+# Project root (one level up from sync-service)
+PROJECT_ROOT = Path(__file__).parent.parent
 
-if not config.flexoffers_domain_keys:
-    print("No FlexOffers domain keys configured.")
-    print("Set FLEXOFFERS_DOMAIN_KEYS in .env file.")
-    print("Format: domain1:key1,domain2:key2")
-    exit(1)
 
-mapper = FlexOffersMapper()
+def reset_database():
+    """Reset the SQLite database to a clean state."""
+    print("Resetting database...")
+    result = subprocess.run(
+        [sys.executable, "setup-dev-db.py", "--reset"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"Error resetting database: {result.stderr}")
+        sys.exit(1)
+    print("Database reset complete.\n")
 
-# Track totals across all domains
-total_advertisers = 0
-total_ads = 0
-total_banners = 0  # ads with width > 0 and height > 0
-total_text_links = 0  # ads with 0x0 dimensions
 
-for domain, api_key in config.flexoffers_domain_keys.items():
-    print(f"\n{'='*60}")
-    print(f"Testing {domain}...")
-    print('='*60)
+def verify_database(conn):
+    """Query database to verify sync results."""
+    print("\n" + "=" * 60)
+    print("DATABASE VERIFICATION")
+    print("=" * 60)
 
-    client = FlexOffersClient(api_key, domain=domain)
-    advertisers = client.fetch_advertisers()
+    # Count advertisers
+    advertisers = _execute_query(conn, "SELECT COUNT(*) as count FROM advertisers")
+    advertiser_count = advertisers[0]["count"]
+    print(f"Advertisers in DB: {advertiser_count}")
 
-    print(f"\n=== ADVERTISERS (would insert to `advertisers` table) ===")
-    print(f"Found {len(advertisers)} advertisers\n")
+    # Count ads
+    ads = _execute_query(conn, "SELECT COUNT(*) as count FROM ads")
+    ad_count = ads[0]["count"]
+    print(f"Ads in DB: {ad_count}")
 
-    for i, raw_adv in enumerate(advertisers, 1):
-        mapped = mapper.map_advertiser(raw_adv)
-        print(f"{i}. {mapped['network_program_name']}")
-        print(f"   network_program_id: {mapped['network_program_id']}")
-        print(f"   status: {mapped['status']}")
-        print(f"   website_url: {mapped['website_url']}")
-        print(f"   category: {mapped['category']}")
-        print(f"   epc: {mapped['epc']}")
-        print()
+    # Count by creative type
+    banners = _execute_query(
+        conn, "SELECT COUNT(*) as count FROM ads WHERE width > 0 AND height > 0"
+    )
+    text_links = _execute_query(
+        conn, "SELECT COUNT(*) as count FROM ads WHERE width = 0 AND height = 0"
+    )
+    print(f"  - Banners (width > 0, height > 0): {banners[0]['count']}")
+    print(f"  - Text links (0x0): {text_links[0]['count']}")
 
-    total_advertisers += len(advertisers)
+    # Verify sync log was created
+    sync_logs = _execute_query(
+        conn, "SELECT * FROM sync_logs WHERE network = 'flexoffers' ORDER BY started_at DESC LIMIT 1"
+    )
+    if sync_logs:
+        log = sync_logs[0]
+        print(f"\nSync log entry:")
+        print(f"  - Advertisers synced: {log['advertisers_synced']}")
+        print(f"  - Ads synced: {log['ads_synced']}")
+        print(f"  - Errors: {log['errors']}")
+        if log.get("duration_seconds"):
+            print(f"  - Duration: {log['duration_seconds']}s")
 
-    # Fetch ads for first 5 advertisers (more chance of finding banners)
-    print(f"\n=== ADS (would insert to `ads` table) ===")
-    advertisers_to_fetch = advertisers[:5]
+    # Sample advertiser
+    if advertiser_count > 0:
+        sample_adv = _execute_query(conn, "SELECT name, website_url FROM advertisers LIMIT 3")
+        print(f"\nSample advertisers:")
+        for adv in sample_adv:
+            print(f"  - {adv['name']}")
 
-    if not advertisers_to_fetch:
-        print("No advertisers to fetch ads for.")
-        continue
+    # Sample ads
+    if ad_count > 0:
+        sample_ads = _execute_query(
+            conn, "SELECT advert_name, width, height FROM ads LIMIT 3"
+        )
+        print(f"\nSample ads:")
+        for ad in sample_ads:
+            print(f"  - {ad['advert_name']} ({ad['width']}x{ad['height']})")
 
-    domain_ad_count = 0
-    for raw_adv in advertisers_to_fetch:
-        adv_id = raw_adv.get("id")
-        adv_name = raw_adv.get("name", "Unknown")
 
-        print(f"\nAdvertiser: {adv_name} ({adv_id})")
+def main():
+    # Verify SQLite mode
+    if not _use_sqlite:
+        print("Error: This test requires SQLite mode.")
+        print("Set DB_PATH in .env (e.g., DB_PATH=../database/affiliate_ads.sqlite)")
+        sys.exit(1)
 
-        ads = client.fetch_ads(str(adv_id))
+    # Load config
+    config = load_config()
+    if not config.flexoffers_domain_keys:
+        print("No FlexOffers domain keys configured.")
+        print("Set FLEXOFFERS_DOMAIN_KEYS in .env file.")
+        print("Format: domain1:key1,domain2:key2")
+        sys.exit(1)
 
-        if not ads:
-            print("  (no ads found)")
-            continue
+    # Reset database
+    reset_database()
 
-        # Print raw JSON for first 2 ads to debug field names
-        print(f"\n  --- RAW JSON (first 2 ads) ---")
-        for raw_ad in ads[:2]:
-            print(f"  {json.dumps(raw_ad, indent=4)}")
-        print(f"  --- END RAW JSON ---\n")
+    # Sync each domain
+    print("=" * 60)
+    print("SYNCING FLEXOFFERS DATA")
+    print("=" * 60)
 
-        for j, raw_ad in enumerate(ads, 1):
-            mapped_ad = mapper.map_ad(raw_ad, adv_id)
-            print(f"  {j}. {mapped_ad['advert_name']}")
-            print(f"     width: {mapped_ad['width']}, height: {mapped_ad['height']}")
-            print(f"     creative_type: {mapped_ad['creative_type']}")
-            print(f"     tracking_url: {mapped_ad['tracking_url'][:80]}..." if len(mapped_ad['tracking_url']) > 80 else f"     tracking_url: {mapped_ad['tracking_url']}")
-            print(f"     image_url: {mapped_ad['image_url'][:80]}..." if mapped_ad['image_url'] and len(mapped_ad['image_url']) > 80 else f"     image_url: {mapped_ad['image_url']}")
-            print(f"     status: {mapped_ad['status']}")
-            print()
+    total_stats = {
+        "advertisers_synced": 0,
+        "ads_synced": 0,
+        "ads_updated": 0,
+        "errors": 0,
+    }
 
-            # Track banner vs text link
-            if mapped_ad['width'] > 0 and mapped_ad['height'] > 0:
-                total_banners += 1
-            else:
-                total_text_links += 1
+    with get_connection() as conn:
+        for domain, api_key in config.flexoffers_domain_keys.items():
+            print(f"\n[{domain}] Starting sync...")
 
-        domain_ad_count += len(ads)
+            client = FlexOffersClient(api_key, domain=domain)
+            try:
+                stats = client.sync(conn)
+                print(f"[{domain}] Done: {stats['advertisers_synced']} advertisers, "
+                      f"{stats['ads_synced']} ads, {stats['errors']} errors")
 
-    total_ads += domain_ad_count
-    print(f"\n[{domain}] Fetched {domain_ad_count} ads from {len(advertisers_to_fetch)} advertisers")
+                # Accumulate totals
+                for key in total_stats:
+                    total_stats[key] += stats.get(key, 0)
 
-    client.close()
+            except Exception as e:
+                print(f"[{domain}] Sync failed: {e}")
+                total_stats["errors"] += 1
+            finally:
+                client.close()
 
-# Summary
-print(f"\n{'='*60}")
-print("SUMMARY")
-print('='*60)
-print(f"Total advertisers across all domains: {total_advertisers}")
-print(f"Total ads fetched (from first 5 advertisers per domain): {total_ads}")
-print()
-print("=== DIMENSION BREAKDOWN ===")
-print(f"Banners (width > 0 and height > 0): {total_banners}")
-print(f"Text links (0x0 dimensions): {total_text_links}")
+    # Print summary
+    print("\n" + "=" * 60)
+    print("SYNC SUMMARY")
+    print("=" * 60)
+    print(f"Total advertisers synced: {total_stats['advertisers_synced']}")
+    print(f"Total ads synced: {total_stats['ads_synced']}")
+    print(f"Total errors: {total_stats['errors']}")
+
+    # Verify data in database
+    with get_connection() as conn:
+        verify_database(conn)
+
+    print("\n" + "=" * 60)
+    print("TEST COMPLETE")
+    print("=" * 60)
+    print(f"Database file: {PROJECT_ROOT / 'database' / 'affiliate_ads.sqlite'}")
+    print("Verify with: python setup-dev-db.py --verify")
+
+
+if __name__ == "__main__":
+    main()
