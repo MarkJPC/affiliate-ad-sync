@@ -44,6 +44,7 @@ cd sync-service
 uv sync                    # Install dependencies
 uv run python -m src.main  # Run sync manually
 uv run pytest              # Run tests
+uv run python test_flexoffers.py  # Test FlexOffers API
 ```
 
 ### Admin Dashboard (Laravel)
@@ -81,7 +82,10 @@ MYSQL_PORT=3306
 MYSQL_USER=your_user
 MYSQL_PASSWORD=your_password
 MYSQL_DATABASE=affiliate_ads
+FLEXOFFERS_DOMAIN_KEYS=domain1:key1,domain2:key2
 ```
+
+See `docs/api-notes/` for network-specific API documentation.
 
 ### admin-dashboard (Laravel)
 ```

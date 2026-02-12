@@ -322,9 +322,8 @@ MYSQL_USER=affiliate_user
 MYSQL_PASSWORD=********
 MYSQL_DATABASE=affiliate_ads
 
-# FlexOffers (Mark)
-FLEXOFFERS_API_KEY_RVTRAVEL=a0fb95df-e707-4e71-877a-f5bb213ab26e
-FLEXOFFERS_API_KEY_CAMPING=604892e9-596a-43dc-9aff-5c4de8b805a1
+# FlexOffers (Mark) - Format: domain1:key1,domain2:key2
+FLEXOFFERS_DOMAIN_KEYS=www.rvtravellife.com:a0fb95df-...,thisoldcampsite.com:604892e9-...
 
 # Awin (Nadia)
 AWIN_API_TOKEN=a0858024-b0b0-4cec-b2e0-43706e161709
@@ -392,7 +391,7 @@ jobs:
 
 **Required GitHub Secrets:**
 - `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
-- `FLEXOFFERS_API_KEY_RVTRAVEL`, `FLEXOFFERS_API_KEY_CAMPING`
+- `FLEXOFFERS_DOMAIN_KEYS`
 - `AWIN_API_TOKEN`
 - `CJ_API_KEY` (when available)
 - `IMPACT_ACCOUNT_SID`, `IMPACT_AUTH_TOKEN` (when available)
