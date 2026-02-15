@@ -21,6 +21,7 @@ class Config:
 
     # CJ (Rag)
     cj_api_token: str | None = None
+    cj_cid: str | None = None
     cj_website_id: str | None = None
 
     # Impact (Rag)
@@ -45,6 +46,7 @@ def load_config() -> Config:
         awin_api_token=os.getenv("AWIN_API_TOKEN"),
         awin_publisher_id=os.getenv("AWIN_PUBLISHER_ID"),
         cj_api_token=os.getenv("CJ_API_TOKEN"),
+        cj_cid=os.getenv("CJ_CID"),
         cj_website_id=os.getenv("CJ_WEBSITE_ID"),
         impact_account_sid=os.getenv("IMPACT_ACCOUNT_SID"),
         impact_auth_token=os.getenv("IMPACT_AUTH_TOKEN"),
