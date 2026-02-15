@@ -39,8 +39,95 @@ class ImpactClient(NetworkClient):
         return "impact"
 
     def fetch_advertisers(self) -> list[dict]:
-        # TODO: Implement - GET /Mediapartners/{AccountSid}/Campaigns
-        raise NotImplementedError
+        """Fetch all campaigns (advertisers), handling pagination.
+
+        Returns:
+            List of raw campaign dicts from the API. May return partial
+            results if some pages fail after retries.
+        """
+        campaigns: list[dict] = []
+        page = 1
+        page_size = 100  # Impact default and max
+
+        logger.info("Fetching Impact campaigns")
+
+        while True:
+            params = {"Page": page, "PageSize": page_size}
+
+            # Retry logic for this page
+            response = None
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    response = self._client.get(
+                        f"{BASE_URL}/Mediapartners/{self.account_sid}/Campaigns",
+                        params=params,
+                    )
+                    break  # Success, exit retry loop
+                except httpx.RequestError as e:
+                    logger.warning(
+                        f"Request error on page {page} (attempt {attempt}/{MAX_RETRIES}): {e}"
+                    )
+                    if attempt < MAX_RETRIES:
+                        continue
+                    # All retries exhausted
+                    logger.warning(
+                        f"Failed to fetch page {page} after {MAX_RETRIES} retries, "
+                        f"returning {len(campaigns)} partial results"
+                    )
+                    return campaigns
+
+            # Handle specific error codes
+            if response.status_code == 401:
+                raise httpx.HTTPStatusError(
+                    "Invalid Impact credentials",
+                    request=response.request,
+                    response=response,
+                )
+            if response.status_code == 403:
+                raise httpx.HTTPStatusError(
+                    "Impact rate limit exceeded or access denied",
+                    request=response.request,
+                    response=response,
+                )
+            if response.status_code == 204:
+                logger.debug(f"Page {page}: no content (204)")
+                break
+
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                logger.warning(
+                    f"HTTP error on page {page}: {e}, "
+                    f"returning {len(campaigns)} partial results"
+                )
+                return campaigns
+
+            data = response.json()
+            page_campaigns = data.get("Campaigns", [])
+
+            if not page_campaigns:
+                logger.debug(f"Page {page}: empty response, stopping pagination")
+                break
+
+            for camp in page_campaigns:
+                logger.debug(
+                    f"Campaign: id={camp.get('CampaignId')}, "
+                    f"name={camp.get('CampaignName')}, "
+                    f"status={camp.get('ContractStatus')}"
+                )
+
+            campaigns.extend(page_campaigns)
+            logger.debug(f"Page {page}: fetched {len(page_campaigns)} campaigns")
+
+            # Check if there are more pages
+            next_page_uri = data.get("@nextpageuri", "")
+            if not next_page_uri:
+                break
+
+            page += 1
+
+        logger.info(f"Fetched {len(campaigns)} total campaigns")
+        return campaigns
 
     def fetch_ads(self, advertiser_id: str) -> list[dict]:
         # TODO: Implement - GET /Mediapartners/{AccountSid}/Ads
