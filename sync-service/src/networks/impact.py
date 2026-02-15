@@ -130,8 +130,103 @@ class ImpactClient(NetworkClient):
         return campaigns
 
     def fetch_ads(self, advertiser_id: str) -> list[dict]:
-        # TODO: Implement - GET /Mediapartners/{AccountSid}/Ads
-        raise NotImplementedError
+        """Fetch all ads globally, handling pagination.
+
+        Note: Impact's per-campaign ads endpoint returns 403, so this
+        fetches ALL ads from the global /Ads endpoint regardless of
+        the advertiser_id parameter. Grouping by campaign is handled
+        in the sync() override.
+
+        Args:
+            advertiser_id: Ignored — exists to satisfy base class interface.
+
+        Returns:
+            List of raw ad dicts from the API. May return partial
+            results if some pages fail after retries.
+        """
+        ads: list[dict] = []
+        page = 1
+        page_size = 100  # Impact default and max
+
+        logger.info("Fetching Impact ads (global endpoint)")
+
+        while True:
+            params = {"Page": page, "PageSize": page_size}
+
+            # Retry logic for this page
+            response = None
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    response = self._client.get(
+                        f"{BASE_URL}/Mediapartners/{self.account_sid}/Ads",
+                        params=params,
+                    )
+                    break  # Success, exit retry loop
+                except httpx.RequestError as e:
+                    logger.warning(
+                        f"Request error fetching ads page {page} "
+                        f"(attempt {attempt}/{MAX_RETRIES}): {e}"
+                    )
+                    if attempt < MAX_RETRIES:
+                        continue
+                    # All retries exhausted
+                    logger.warning(
+                        f"Failed to fetch ads page {page} after {MAX_RETRIES} retries, "
+                        f"returning {len(ads)} partial results"
+                    )
+                    return ads
+
+            # Handle specific error codes
+            if response.status_code == 401:
+                raise httpx.HTTPStatusError(
+                    "Invalid Impact credentials",
+                    request=response.request,
+                    response=response,
+                )
+            if response.status_code == 403:
+                raise httpx.HTTPStatusError(
+                    "Impact rate limit exceeded or access denied",
+                    request=response.request,
+                    response=response,
+                )
+            if response.status_code == 204:
+                logger.debug(f"Ads page {page}: no content (204)")
+                break
+
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                logger.warning(
+                    f"HTTP error on ads page {page}: {e}, "
+                    f"returning {len(ads)} partial results"
+                )
+                return ads
+
+            data = response.json()
+            page_ads = data.get("Ads", [])
+
+            if not page_ads:
+                logger.debug(f"Ads page {page}: empty response, stopping pagination")
+                break
+
+            for ad in page_ads:
+                logger.debug(
+                    f"Ad: id={ad.get('Id')}, name={ad.get('Name')}, "
+                    f"type={ad.get('Type')}, campaign={ad.get('CampaignId')}"
+                )
+
+            ads.extend(page_ads)
+            logger.debug(f"Ads page {page}: fetched {len(page_ads)} ads")
+
+            # Check if there are more pages
+            next_page_uri = data.get("@nextpageuri", "")
+            if not next_page_uri:
+                break
+
+            page += 1
+
+        logger.info(f"Fetched {len(ads)} total ads")
+        return ads
 
     def close(self) -> None:
         """Close the HTTP client."""
