@@ -142,15 +142,22 @@ class TestCJMapper:
         """Should map advertiser response correctly."""
         mapper = get_mapper("cj")
         raw = {
-            "advertiserId": "cj-123",
-            "advertiserName": "CJ Merchant",
-            "relationshipStatus": "joined",
+            "advertiser-id": "cj-123",
+            "advertiser-name": "CJ Merchant",
+            "account-status": "Active",
+            "program-url": "https://example.com",
+            "primary-category/child": "Retail",
+            "seven-day-epc": "1.50",
         }
         result = mapper.map_advertiser(raw)
 
         assert result["network"] == "cj"
         assert result["network_program_id"] == "cj-123"
+        assert result["network_program_name"] == "CJ Merchant"
         assert result["status"] == "active"
+        assert result["website_url"] == "https://example.com"
+        assert result["category"] == "Retail"
+        assert result["epc"] == 1.50
 
 
 class TestImpactMapper:
