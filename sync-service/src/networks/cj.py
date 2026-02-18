@@ -240,8 +240,104 @@ class CJClient(NetworkClient):
             Includes banners (with dimensions) and text links (0x0).
             May return partial results if some pages fail after retries.
         """
-        # TODO: Implement in Commit 3
-        raise NotImplementedError
+        ads: list[dict] = []
+        page = 1
+        page_size = 100  # Default/max for CJ link search
+
+        logger.debug(f"Fetching ads for CJ advertiser {advertiser_id}")
+
+        while True:
+            params = {
+                "website-id": self.website_id,
+                "advertiser-ids": advertiser_id,
+                "page-number": page,
+                "records-per-page": page_size,
+            }
+
+            # Retry logic for this page
+            response = None
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    response = self._client.get(
+                        self.LINK_SEARCH_URL,
+                        headers=self._get_headers(),
+                        params=params,
+                    )
+                    break  # Success, exit retry loop
+                except httpx.RequestError as e:
+                    logger.warning(
+                        f"Request error fetching ads for advertiser {advertiser_id} "
+                        f"page {page} (attempt {attempt}/{MAX_RETRIES}): {e}"
+                    )
+                    if attempt < MAX_RETRIES:
+                        continue
+                    # All retries exhausted
+                    logger.warning(
+                        f"Failed to fetch ads for advertiser {advertiser_id} page {page} "
+                        f"after {MAX_RETRIES} retries, returning {len(ads)} partial results"
+                    )
+                    return ads
+
+            # Handle specific error codes
+            if response.status_code == 401:
+                raise httpx.HTTPStatusError(
+                    "Invalid CJ API token",
+                    request=response.request,
+                    response=response,
+                )
+
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                logger.warning(
+                    f"HTTP error fetching ads for advertiser {advertiser_id} page {page}: {e}, "
+                    f"returning {len(ads)} partial results"
+                )
+                return ads
+
+            # Parse XML response
+            try:
+                page_ads, attribs = self._parse_xml_elements(response.text, "link")
+            except ET.ParseError as e:
+                logger.warning(
+                    f"XML parse error for advertiser {advertiser_id} page {page}: {e}"
+                )
+                return ads
+
+            if not page_ads:
+                logger.debug(
+                    f"Advertiser {advertiser_id} page {page}: empty response, stopping"
+                )
+                break
+
+            # Log each link at DEBUG level
+            for ad in page_ads:
+                link_type = ad.get("link-type", "unknown")
+                width = ad.get("creative-width", "0")
+                height = ad.get("creative-height", "0")
+                logger.debug(
+                    f"Link: id={ad.get('link-id')}, name={ad.get('link-name')}, "
+                    f"type={link_type}, {width}x{height}"
+                )
+
+            ads.extend(page_ads)
+            logger.debug(
+                f"Advertiser {advertiser_id} page {page}: fetched {len(page_ads)} links"
+            )
+
+            # Check if we've fetched all results
+            total_matched = int(attribs.get("total-matched", 0))
+            if len(page_ads) < page_size:
+                break
+            if page * page_size >= total_matched:
+                break
+
+            page += 1
+
+        logger.debug(
+            f"Fetched {len(ads)} total links for CJ advertiser {advertiser_id}"
+        )
+        return ads
 
     def close(self) -> None:
         """Close the HTTP client."""
