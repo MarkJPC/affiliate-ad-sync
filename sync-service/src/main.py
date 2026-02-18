@@ -59,7 +59,8 @@ def main() -> int:
         for client in clients:
             try:
                 logger.info(f"Syncing {client.network_name}...")
-                client.sync(conn)
+                site_domain = getattr(client, "domain", None)
+                client.sync(conn, site_domain=site_domain)
                 logger.info(f"Completed {client.network_name} sync")
             except Exception as e:
                 logger.error(f"Error syncing {client.network_name}: {e}")

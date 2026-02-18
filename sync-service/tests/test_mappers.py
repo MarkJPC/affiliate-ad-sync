@@ -97,6 +97,7 @@ class TestFlexOffersMapper:
         assert result["height"] == 250
         assert result["creative_type"] == "banner"
         assert result["image_url"] == "https://example.com/banner.jpg"
+        assert "weight" not in result
         assert "raw_data" in result
 
     def test_map_ad_text_link(self):
@@ -328,7 +329,7 @@ class TestImpactMapper:
         assert result["show_desktop"] == "Y"
         assert result["show_mobile"] == "Y"
         assert result["show_tablet"] == "Y"
-        assert result["weight"] == 2
+        assert "weight" not in result
         assert result["autodelete"] == "Y"
         assert result["budget"] == 0
         assert result["geo_cities"] == "a:0:{}"

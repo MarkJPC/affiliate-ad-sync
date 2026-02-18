@@ -229,7 +229,7 @@ class ImpactClient(NetworkClient):
         logger.info(f"Fetched {len(ads)} total ads")
         return ads
 
-    def sync(self, conn) -> dict:
+    def sync(self, conn, site_domain: str | None = None) -> dict:
         """Sync campaigns and ads from Impact to the database.
 
         Overrides the base class sync() because Impact's per-campaign ads
@@ -238,6 +238,8 @@ class ImpactClient(NetworkClient):
 
         Args:
             conn: Database connection.
+            site_domain: If set, create rules for this site only.
+                Otherwise create rules for ALL active sites.
 
         Returns:
             Dict with sync statistics.
@@ -249,15 +251,21 @@ class ImpactClient(NetworkClient):
         stats = {
             "advertisers_synced": 0,
             "ads_synced": 0,
-            "ads_created": 0,
-            "ads_updated": 0,
+            "ads_deleted": 0,
             "errors": 0,
             "ad_types": {},
         }
 
-        log_id = db.create_sync_log(conn, self.network_name)
+        log_id = db.create_sync_log(conn, self.network_name, site_domain=site_domain)
 
         try:
+            # Determine which sites to create rules for
+            if site_domain:
+                site_row = db.get_site_by_domain(conn, site_domain)
+                rule_site_ids = [site_row["id"]] if site_row else []
+            else:
+                rule_site_ids = [s["id"] for s in db.get_active_sites(conn)]
+
             # Fetch all campaigns and all ads up front
             raw_campaigns = self.fetch_advertisers()
             logger.info(f"[impact] Fetched {len(raw_campaigns)} campaigns")
@@ -270,10 +278,13 @@ class ImpactClient(NetworkClient):
             for raw_ad in raw_ads:
                 ads_by_campaign[raw_ad.get("CampaignId", "")].append(raw_ad)
 
+            seen_advertiser_ids: set[str] = set()
+
             # Process each campaign and its ads
             for raw_camp in raw_campaigns:
                 try:
                     adv_data = mapper.map_advertiser(raw_camp)
+                    seen_advertiser_ids.add(adv_data["network_program_id"])
 
                     # Map canonical keys to db columns
                     db_adv = {
@@ -289,9 +300,14 @@ class ImpactClient(NetworkClient):
                     advertiser_id, _ = db.upsert_advertiser(conn, db_adv)
                     stats["advertisers_synced"] += 1
 
+                    # Create site_advertiser_rules for applicable sites
+                    for sid in rule_site_ids:
+                        db.ensure_site_advertiser_rule(conn, sid, advertiser_id)
+
                     # Look up ads for this campaign from the grouped dict
                     campaign_id = adv_data["network_program_id"]
                     campaign_ads = ads_by_campaign.get(campaign_id, [])
+                    seen_ad_ids: set[str] = set()
 
                     for raw_ad in campaign_ads:
                         try:
@@ -301,9 +317,18 @@ class ImpactClient(NetworkClient):
                             creative_type = ad_data.get("creative_type", "banner")
                             stats["ad_types"][creative_type] = stats["ad_types"].get(creative_type, 0) + 1
 
+                            # Warn on missing image_url
+                            if not ad_data.get("image_url"):
+                                logger.warning(
+                                    f"[impact] Ad {ad_data.get('network_link_id')} has no image_url"
+                                )
+
+                            network_ad_id = ad_data["network_link_id"]
+                            seen_ad_ids.add(network_ad_id)
+
                             db_ad = {
                                 "network": ad_data["network"],
-                                "network_ad_id": ad_data["network_link_id"],
+                                "network_ad_id": network_ad_id,
                                 "advertiser_id": advertiser_id,
                                 "creative_type": ad_data.get("creative_type", "banner"),
                                 "tracking_url": ad_data["tracking_url"],
@@ -314,7 +339,7 @@ class ImpactClient(NetworkClient):
                                 "advert_name": ad_data["advert_name"],
                                 "bannercode": ad_data["bannercode"],
                                 "imagetype": ad_data.get("imagetype", ""),
-                                "image_url": ad_data["image_url"],
+                                "image_url": ad_data.get("image_url"),
                                 "width": ad_data["width"],
                                 "height": ad_data["height"],
                                 "campaign_name": ad_data.get("campaign_name", "General Promotion"),
@@ -325,7 +350,6 @@ class ImpactClient(NetworkClient):
                                 "show_tablet": ad_data.get("show_tablet", "Y"),
                                 "show_ios": ad_data.get("show_ios", "Y"),
                                 "show_android": ad_data.get("show_android", "Y"),
-                                "weight": ad_data.get("weight", 2),
                                 "autodelete": ad_data.get("autodelete", "Y"),
                                 "autodisable": ad_data.get("autodisable", "N"),
                                 "budget": ad_data.get("budget", 0),
@@ -341,25 +365,37 @@ class ImpactClient(NetworkClient):
 
                             _, changed = db.upsert_ad(conn, db_ad)
                             stats["ads_synced"] += 1
-                            if changed:
-                                stats["ads_updated"] += 1
 
                         except Exception as e:
                             logger.warning(f"[impact] Error processing ad: {e}")
                             stats["errors"] += 1
 
+                    # Delete stale ads for this campaign/advertiser
+                    if seen_ad_ids:
+                        deleted = db.delete_stale_ads(conn, self.network_name, advertiser_id, seen_ad_ids)
+                        stats["ads_deleted"] += deleted
+
                 except Exception as e:
                     logger.warning(f"[impact] Error processing campaign: {e}")
                     stats["errors"] += 1
 
-            # Don't pass ad_types to update_sync_log (not a db column)
-            db_stats = {k: v for k, v in stats.items() if k != "ad_types"}
-            db.update_sync_log(conn, log_id, **db_stats)
+            # Deactivate advertisers not seen this sync
+            if seen_advertiser_ids:
+                db.deactivate_stale_advertisers(conn, self.network_name, seen_advertiser_ids)
+
+            db.update_sync_log(
+                conn,
+                log_id,
+                advertisers_synced=stats["advertisers_synced"],
+                ads_synced=stats["ads_synced"],
+                ads_deleted=stats["ads_deleted"],
+                status="success",
+            )
 
             # Enhanced logging output
             logger.info("[impact] Sync complete:")
             logger.info(f"[impact]   Advertisers: {stats['advertisers_synced']} synced")
-            logger.info(f"[impact]   Ads: {stats['ads_synced']} synced, {stats['ads_updated']} updated")
+            logger.info(f"[impact]   Ads: {stats['ads_synced']} synced, {stats['ads_deleted']} deleted")
             if stats["ad_types"]:
                 ad_types_str = ", ".join(f"{count} {atype}" for atype, count in sorted(stats["ad_types"].items()))
                 logger.info(f"[impact]   Ad types: {ad_types_str}")
@@ -368,7 +404,7 @@ class ImpactClient(NetworkClient):
 
         except Exception as e:
             logger.error(f"[impact] Sync failed: {e}")
-            db.update_sync_log(conn, log_id, errors=1, error_message=str(e))
+            db.update_sync_log(conn, log_id, status="failed", error_message=str(e))
             raise
 
         return stats

@@ -72,14 +72,13 @@ def verify_database() -> bool:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Expected tables
+        # Expected tables (v2 schema — no site_ads table)
         expected_tables = [
             "advertisers",
             "ads",
             "sites",
             "placements",
             "site_advertiser_rules",
-            "site_ads",
             "sync_logs",
             "export_logs",
         ]

@@ -112,8 +112,7 @@ class FlexOffersMapper(Mapper):
             "show_ios": "Y",
             "show_android": "Y",
 
-            # Weight and auto settings
-            "weight": 2,
+            # Auto settings
             "autodelete": "Y",
             "autodisable": "N",
 

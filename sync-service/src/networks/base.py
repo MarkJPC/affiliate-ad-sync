@@ -40,18 +40,20 @@ class NetworkClient(ABC):
         """
         ...
 
-    def sync(self, conn) -> dict:
+    def sync(self, conn, site_domain: str | None = None) -> dict:
         """Sync advertisers and ads from this network to the database.
 
         Fetches all advertisers and their ads, using hash-based change detection
-        to skip unchanged records.
+        to skip unchanged records. Creates site_advertiser_rules and cleans up
+        stale ads/advertisers.
 
         Args:
             conn: Database connection.
+            site_domain: If set (e.g. FlexOffers per-domain keys), create rules
+                for this site only. Otherwise create rules for ALL active sites.
 
         Returns:
-            Dict with sync statistics: advertisers_synced, ads_synced,
-            ads_created, ads_updated, errors.
+            Dict with sync statistics.
         """
         from .. import db
         from ..mappers import get_mapper
@@ -60,21 +62,30 @@ class NetworkClient(ABC):
         stats = {
             "advertisers_synced": 0,
             "ads_synced": 0,
-            "ads_created": 0,
-            "ads_updated": 0,
+            "ads_deleted": 0,
             "errors": 0,
             "ad_types": {},
         }
 
-        log_id = db.create_sync_log(conn, self.network_name)
+        log_id = db.create_sync_log(conn, self.network_name, site_domain=site_domain)
 
         try:
+            # Determine which sites to create rules for
+            if site_domain:
+                site_row = db.get_site_by_domain(conn, site_domain)
+                rule_site_ids = [site_row["id"]] if site_row else []
+            else:
+                rule_site_ids = [s["id"] for s in db.get_active_sites(conn)]
+
             raw_advertisers = self.fetch_advertisers()
             logger.info(f"[{self.network_name}] Fetched {len(raw_advertisers)} advertisers")
+
+            seen_advertiser_ids: set[str] = set()
 
             for raw_adv in raw_advertisers:
                 try:
                     adv_data = mapper.map_advertiser(raw_adv)
+                    seen_advertiser_ids.add(adv_data["network_program_id"])
 
                     # Map canonical keys to db columns
                     db_adv = {
@@ -90,8 +101,13 @@ class NetworkClient(ABC):
                     advertiser_id, _ = db.upsert_advertiser(conn, db_adv)
                     stats["advertisers_synced"] += 1
 
+                    # Create site_advertiser_rules for applicable sites
+                    for sid in rule_site_ids:
+                        db.ensure_site_advertiser_rule(conn, sid, advertiser_id)
+
                     # Fetch and process ads for this advertiser
                     raw_ads = self.fetch_ads(adv_data["network_program_id"])
+                    seen_ad_ids: set[str] = set()
 
                     for raw_ad in raw_ads:
                         try:
@@ -101,10 +117,19 @@ class NetworkClient(ABC):
                             creative_type = ad_data.get("creative_type", "banner")
                             stats["ad_types"][creative_type] = stats["ad_types"].get(creative_type, 0) + 1
 
+                            # Warn on missing image_url
+                            if not ad_data.get("image_url"):
+                                logger.warning(
+                                    f"[{self.network_name}] Ad {ad_data.get('network_link_id')} has no image_url"
+                                )
+
+                            network_ad_id = ad_data["network_link_id"]
+                            seen_ad_ids.add(network_ad_id)
+
                             # Map to db columns (network_link_id -> network_ad_id)
                             db_ad = {
                                 "network": ad_data["network"],
-                                "network_ad_id": ad_data["network_link_id"],
+                                "network_ad_id": network_ad_id,
                                 "advertiser_id": advertiser_id,
                                 "creative_type": ad_data.get("creative_type", "banner"),
                                 "tracking_url": ad_data["tracking_url"],
@@ -115,7 +140,7 @@ class NetworkClient(ABC):
                                 "advert_name": ad_data["advert_name"],
                                 "bannercode": ad_data["bannercode"],
                                 "imagetype": ad_data.get("imagetype", ""),
-                                "image_url": ad_data["image_url"],
+                                "image_url": ad_data.get("image_url"),
                                 "width": ad_data["width"],
                                 "height": ad_data["height"],
                                 "campaign_name": ad_data.get("campaign_name", "General Promotion"),
@@ -126,7 +151,6 @@ class NetworkClient(ABC):
                                 "show_tablet": ad_data.get("show_tablet", "Y"),
                                 "show_ios": ad_data.get("show_ios", "Y"),
                                 "show_android": ad_data.get("show_android", "Y"),
-                                "weight": ad_data.get("weight", 2),
                                 "autodelete": ad_data.get("autodelete", "Y"),
                                 "autodisable": ad_data.get("autodisable", "N"),
                                 "budget": ad_data.get("budget", 0),
@@ -142,27 +166,37 @@ class NetworkClient(ABC):
 
                             _, changed = db.upsert_ad(conn, db_ad)
                             stats["ads_synced"] += 1
-                            if changed:
-                                # Determine if it was created or updated
-                                # (upsert returns True for both, we count as updated for simplicity)
-                                stats["ads_updated"] += 1
 
                         except Exception as e:
                             logger.warning(f"[{self.network_name}] Error processing ad: {e}")
                             stats["errors"] += 1
 
+                    # Delete stale ads for this advertiser
+                    if seen_ad_ids:
+                        deleted = db.delete_stale_ads(conn, self.network_name, advertiser_id, seen_ad_ids)
+                        stats["ads_deleted"] += deleted
+
                 except Exception as e:
                     logger.warning(f"[{self.network_name}] Error processing advertiser: {e}")
                     stats["errors"] += 1
 
-            # Don't pass ad_types to update_sync_log (not a db column)
-            db_stats = {k: v for k, v in stats.items() if k != "ad_types"}
-            db.update_sync_log(conn, log_id, **db_stats)
+            # Deactivate advertisers not seen this sync
+            if seen_advertiser_ids:
+                db.deactivate_stale_advertisers(conn, self.network_name, seen_advertiser_ids)
+
+            db.update_sync_log(
+                conn,
+                log_id,
+                advertisers_synced=stats["advertisers_synced"],
+                ads_synced=stats["ads_synced"],
+                ads_deleted=stats["ads_deleted"],
+                status="success",
+            )
 
             # Enhanced logging output
             logger.info(f"[{self.network_name}] Sync complete:")
             logger.info(f"[{self.network_name}]   Advertisers: {stats['advertisers_synced']} synced")
-            logger.info(f"[{self.network_name}]   Ads: {stats['ads_synced']} synced, {stats['ads_updated']} updated")
+            logger.info(f"[{self.network_name}]   Ads: {stats['ads_synced']} synced, {stats['ads_deleted']} deleted")
             if stats["ad_types"]:
                 ad_types_str = ", ".join(f"{count} {atype}" for atype, count in sorted(stats["ad_types"].items()))
                 logger.info(f"[{self.network_name}]   Ad types: {ad_types_str}")
@@ -171,7 +205,7 @@ class NetworkClient(ABC):
 
         except Exception as e:
             logger.error(f"[{self.network_name}] Sync failed: {e}")
-            db.update_sync_log(conn, log_id, errors=1, error_message=str(e))
+            db.update_sync_log(conn, log_id, status="failed", error_message=str(e))
             raise
 
         return stats
