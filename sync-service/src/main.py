@@ -33,9 +33,10 @@ def main() -> int:
     # Initialize network clients based on available credentials
     clients = []
 
-    if config.flexoffers_api_key:
-        clients.append(FlexOffersClient(config.flexoffers_api_key))
-        logger.info("FlexOffers client initialized")
+    if config.flexoffers_domain_keys:
+        for domain, api_key in config.flexoffers_domain_keys.items():
+            clients.append(FlexOffersClient(api_key, domain=domain))
+            logger.info(f"FlexOffers client initialized for {domain}")
 
     if config.awin_api_token and config.awin_publisher_id:
         clients.append(AwinClient(config.awin_api_token, config.awin_publisher_id))

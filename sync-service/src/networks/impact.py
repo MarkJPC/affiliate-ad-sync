@@ -252,6 +252,7 @@ class ImpactClient(NetworkClient):
             "ads_created": 0,
             "ads_updated": 0,
             "errors": 0,
+            "ad_types": {},
         }
 
         log_id = db.create_sync_log(conn, self.network_name)
@@ -295,6 +296,10 @@ class ImpactClient(NetworkClient):
                     for raw_ad in campaign_ads:
                         try:
                             ad_data = mapper.map_ad(raw_ad, advertiser_id)
+
+                            # Track ad types for stats
+                            creative_type = ad_data.get("creative_type", "banner")
+                            stats["ad_types"][creative_type] = stats["ad_types"].get(creative_type, 0) + 1
 
                             db_ad = {
                                 "network": ad_data["network"],
@@ -347,8 +352,19 @@ class ImpactClient(NetworkClient):
                     logger.warning(f"[impact] Error processing campaign: {e}")
                     stats["errors"] += 1
 
-            db.update_sync_log(conn, log_id, **stats)
-            logger.info(f"[impact] Sync complete: {stats}")
+            # Don't pass ad_types to update_sync_log (not a db column)
+            db_stats = {k: v for k, v in stats.items() if k != "ad_types"}
+            db.update_sync_log(conn, log_id, **db_stats)
+
+            # Enhanced logging output
+            logger.info("[impact] Sync complete:")
+            logger.info(f"[impact]   Advertisers: {stats['advertisers_synced']} synced")
+            logger.info(f"[impact]   Ads: {stats['ads_synced']} synced, {stats['ads_updated']} updated")
+            if stats["ad_types"]:
+                ad_types_str = ", ".join(f"{count} {atype}" for atype, count in sorted(stats["ad_types"].items()))
+                logger.info(f"[impact]   Ad types: {ad_types_str}")
+            if stats["errors"] > 0:
+                logger.warning(f"[impact]   Errors: {stats['errors']}")
 
         except Exception as e:
             logger.error(f"[impact] Sync failed: {e}")

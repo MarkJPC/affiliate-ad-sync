@@ -116,8 +116,8 @@ CREATE TABLE ads (
     -- imagetype: Always blank for hosted images (we don't self-host)
     imagetype VARCHAR(50) DEFAULT '',
 
-    -- image_url: Network-hosted banner image URL
-    image_url TEXT NOT NULL,
+    -- image_url: Network-hosted banner image URL (NULL for text links or HTML-only ads)
+    image_url TEXT,
 
     -- Dimensions (critical for placement matching)
     width INT NOT NULL,

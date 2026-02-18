@@ -63,6 +63,7 @@ class NetworkClient(ABC):
             "ads_created": 0,
             "ads_updated": 0,
             "errors": 0,
+            "ad_types": {},
         }
 
         log_id = db.create_sync_log(conn, self.network_name)
@@ -95,6 +96,10 @@ class NetworkClient(ABC):
                     for raw_ad in raw_ads:
                         try:
                             ad_data = mapper.map_ad(raw_ad, advertiser_id)
+
+                            # Track ad types for stats
+                            creative_type = ad_data.get("creative_type", "banner")
+                            stats["ad_types"][creative_type] = stats["ad_types"].get(creative_type, 0) + 1
 
                             # Map to db columns (network_link_id -> network_ad_id)
                             db_ad = {
@@ -150,8 +155,19 @@ class NetworkClient(ABC):
                     logger.warning(f"[{self.network_name}] Error processing advertiser: {e}")
                     stats["errors"] += 1
 
-            db.update_sync_log(conn, log_id, **stats)
-            logger.info(f"[{self.network_name}] Sync complete: {stats}")
+            # Don't pass ad_types to update_sync_log (not a db column)
+            db_stats = {k: v for k, v in stats.items() if k != "ad_types"}
+            db.update_sync_log(conn, log_id, **db_stats)
+
+            # Enhanced logging output
+            logger.info(f"[{self.network_name}] Sync complete:")
+            logger.info(f"[{self.network_name}]   Advertisers: {stats['advertisers_synced']} synced")
+            logger.info(f"[{self.network_name}]   Ads: {stats['ads_synced']} synced, {stats['ads_updated']} updated")
+            if stats["ad_types"]:
+                ad_types_str = ", ".join(f"{count} {atype}" for atype, count in sorted(stats["ad_types"].items()))
+                logger.info(f"[{self.network_name}]   Ad types: {ad_types_str}")
+            if stats["errors"] > 0:
+                logger.warning(f"[{self.network_name}]   Errors: {stats['errors']}")
 
         except Exception as e:
             logger.error(f"[{self.network_name}] Sync failed: {e}")

@@ -342,7 +342,7 @@ def upsert_ad(conn, data: dict) -> tuple[str, bool]:
         data["advert_name"],
         data["bannercode"],
         data.get("imagetype", ""),
-        data["image_url"],
+        data.get("image_url"),
         data["width"],
         data["height"],
         data.get("campaign_name", "General Promotion"),
