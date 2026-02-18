@@ -1,5 +1,7 @@
 """Abstract base class for network response mappers."""
 
+import hashlib
+import json
 from abc import ABC, abstractmethod
 
 
@@ -41,4 +43,15 @@ class Mapper(ABC):
         """
         ...
 
-    # TODO: Add compute_hash() helper after schema is finalized
+    @staticmethod
+    def compute_hash(raw: dict) -> str:
+        """Compute SHA-256 hash of raw API response for change detection.
+
+        Args:
+            raw: Raw API response dictionary.
+
+        Returns:
+            Hex-encoded SHA-256 hash string.
+        """
+        serialized = json.dumps(raw, sort_keys=True, default=str)
+        return hashlib.sha256(serialized.encode()).hexdigest()

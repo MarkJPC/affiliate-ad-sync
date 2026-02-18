@@ -1,0 +1,53 @@
+{
+    "@page": "1",
+    "@numpages": "1",
+    "@pagesize": "100",
+    "@total": "64",
+    "@start": "0",
+    "@end": "63",
+    "@uri": "/Mediapartners/{AccountSid}/Campaigns",
+    "@firstpageuri": "/Mediapartners/{AccountSid}/Campaigns?PageSize=100&Page=1",
+    "@previouspageuri": "",
+    "@nextpageuri": "",
+    "@lastpageuri": "/Mediapartners/{AccountSid}/Campaigns?PageSize=100&Page=1",
+    "Campaigns": [
+        {
+            "AdvertiserId": "28763",
+            "AdvertiserName": "Adorama",
+            "AdvertiserUrl": "http://www.adorama.com",
+            "CampaignId": "11630",
+            "CampaignName": "SunnySports",
+            "CampaignUrl": "http://sunnysports.com",
+            "CampaignDescription": "We offer easy and professional shopping for all your backpacking, camping, hiking, and climbing needs.",
+            "ShippingRegions": ["US"],
+            "CampaignLogoUri": "/Mediapartners/{AccountSid}/Campaigns/11630/Logo",
+            "PublicTermsUri": "/Mediapartners/{AccountSid}/Campaigns/11630/PublicTerms",
+            "ContractStatus": "Expired",
+            "ContractUri": "/Mediapartners/{AccountSid}/Campaigns/11630/Contracts/Active?summary=false",
+            "TrackingLink": "",
+            "HasStandDownPolicy": "true",
+            "AllowsDeeplinking": "true",
+            "DeeplinkDomains": ["sunnysports.com", "*.sunnysports.com"],
+            "Uri": "/Mediapartners/{AccountSid}/Campaigns/11630"
+        },
+        {
+            "AdvertiserId": "66074",
+            "AdvertiserName": "Wine Express",
+            "AdvertiserUrl": "https://www.wineexpress.com",
+            "CampaignId": "2181",
+            "CampaignName": "Wine Express",
+            "CampaignUrl": "http://www.wineexpress.com/",
+            "CampaignDescription": "Wine Express is a classic blend of value and service.",
+            "ShippingRegions": ["US"],
+            "CampaignLogoUri": "/Mediapartners/{AccountSid}/Campaigns/2181/Logo",
+            "PublicTermsUri": "/Mediapartners/{AccountSid}/Campaigns/2181/PublicTerms",
+            "ContractStatus": "Active",
+            "ContractUri": "/Mediapartners/{AccountSid}/Campaigns/2181/Contracts/Active?summary=false",
+            "TrackingLink": "https://wineexpress.vneoga.net/c/{MediaPartnerId}/88200/2181",
+            "HasStandDownPolicy": "true",
+            "AllowsDeeplinking": "true",
+            "DeeplinkDomains": ["www.wineexpress.com", "dev.wineexpress.com"],
+            "Uri": "/Mediapartners/{AccountSid}/Campaigns/2181"
+        }
+    ]
+}
