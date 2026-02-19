@@ -1,6 +1,7 @@
 """FlexOffers API client - Mark's responsibility."""
 
 import logging
+import time
 
 import httpx
 
@@ -63,7 +64,6 @@ class FlexOffersClient(NetworkClient):
 
             # Retry logic for this page
             response = None
-            last_error = None
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
                     response = self._client.get(
@@ -71,9 +71,24 @@ class FlexOffersClient(NetworkClient):
                         headers=self._get_headers(),
                         params=params,
                     )
-                    break  # Success, exit retry loop
+                    # Handle 403 rate limit with exponential backoff
+                    if response.status_code == 403:
+                        if attempt < MAX_RETRIES:
+                            wait_time = 2 ** attempt  # 2s, 4s, 8s
+                            logger.warning(
+                                f"Rate limit hit on page {page} (attempt {attempt}/{MAX_RETRIES}), "
+                                f"waiting {wait_time}s before retry..."
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        # All retries exhausted
+                        logger.warning(
+                            f"Rate limit exceeded on page {page} after {MAX_RETRIES} retries, "
+                            f"returning {len(advertisers)} partial results{domain_info}"
+                        )
+                        return advertisers
+                    break  # Success or other status, exit retry loop
                 except httpx.RequestError as e:
-                    last_error = e
                     logger.warning(
                         f"Request error on page {page} (attempt {attempt}/{MAX_RETRIES}): {e}"
                     )
@@ -90,12 +105,6 @@ class FlexOffersClient(NetworkClient):
             if response.status_code == 401:
                 raise httpx.HTTPStatusError(
                     "Invalid FlexOffers API key",
-                    request=response.request,
-                    response=response,
-                )
-            if response.status_code == 403:
-                raise httpx.HTTPStatusError(
-                    "FlexOffers rate limit exceeded",
                     request=response.request,
                     response=response,
                 )
@@ -177,7 +186,23 @@ class FlexOffersClient(NetworkClient):
                         headers=self._get_headers(),
                         params=params,
                     )
-                    break  # Success, exit retry loop
+                    # Handle 403 rate limit with exponential backoff
+                    if response.status_code == 403:
+                        if attempt < MAX_RETRIES:
+                            wait_time = 2 ** attempt  # 2s, 4s, 8s
+                            logger.warning(
+                                f"Rate limit hit for advertiser {advertiser_id} "
+                                f"(attempt {attempt}/{MAX_RETRIES}), waiting {wait_time}s before retry..."
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        # All retries exhausted
+                        logger.warning(
+                            f"Rate limit exceeded for advertiser {advertiser_id} after {MAX_RETRIES} retries, "
+                            f"returning {len(ads)} partial results"
+                        )
+                        return ads
+                    break  # Success or other status, exit retry loop
                 except httpx.RequestError as e:
                     logger.warning(
                         f"Request error fetching ads for advertiser {advertiser_id} "
@@ -196,12 +221,6 @@ class FlexOffersClient(NetworkClient):
             if response.status_code == 401:
                 raise httpx.HTTPStatusError(
                     "Invalid FlexOffers API key",
-                    request=response.request,
-                    response=response,
-                )
-            if response.status_code == 403:
-                raise httpx.HTTPStatusError(
-                    "FlexOffers rate limit exceeded",
                     request=response.request,
                     response=response,
                 )

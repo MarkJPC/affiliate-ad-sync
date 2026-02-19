@@ -134,6 +134,32 @@ class TestAwinMapper:
         assert result["network"] == "awin"
         assert result["network_program_id"] == "67890"
 
+    def test_map_ad(self):
+        """Should map Awin promotion/offer to canonical schema.
+
+        NOTE: Awin mapper is incomplete - it doesn't return all required
+        fields for database insert (missing advert_name, bannercode, etc.).
+        This test documents the current behavior.
+        """
+        mapper = get_mapper("awin")
+        raw = {
+            "promotionId": "12345",
+            "type": "voucher",
+            "urlTracking": "https://www.awin1.com/cread.php?awinaffid=123&awinmid=456&ued=https://example.com",
+            "url": "https://example.com/offer",
+            "title": "20% Off Everything",
+            "description": "Get 20% off all items",
+        }
+        result = mapper.map_ad(raw, advertiser_id=1)
+
+        assert result["network"] == "awin"
+        assert result["network_ad_id"] == "12345"
+        assert result["advertiser_id"] == 1
+        assert result["creative_type"] == "voucher"
+        assert "awin1.com" in result["tracking_url"]
+        assert result["destination_url"] == "https://example.com/offer"
+        assert result["status"] == "active"
+
 
 class TestCJMapper:
     """Test CJ mapper."""
@@ -158,6 +184,66 @@ class TestCJMapper:
         assert result["website_url"] == "https://example.com"
         assert result["category"] == "Retail"
         assert result["epc"] == 1.50
+
+    def test_map_ad_banner(self):
+        """Should map CJ banner link to canonical schema with AdRotate fields."""
+        mapper = get_mapper("cj")
+        raw = {
+            "link-id": "15678",
+            "link-name": "Holiday Sale Banner 300x250",
+            "link-type": "Banner",
+            "clickUrl": "https://www.anrdoezrs.net/click-12345-15678",
+            "destination": "https://example.com/holiday-sale",
+            "creative-width": "300",
+            "creative-height": "250",
+            "image-url": "https://www.ftjcfx.com/image-12345-15678",
+            "link-code-html": '<a href="https://www.anrdoezrs.net/click-12345-15678"><img src="https://www.ftjcfx.com/image-12345-15678" width="300" height="250" /></a>',
+            "seven-day-epc": "0.75",
+        }
+        result = mapper.map_ad(raw, advertiser_id=99)
+
+        assert result["network"] == "cj"
+        assert result["network_link_id"] == "15678"
+        assert result["advertiser_id"] == 99
+        assert result["creative_type"] == "banner"
+        assert result["width"] == 300
+        assert result["height"] == 250
+        assert result["tracking_url"] == "https://www.anrdoezrs.net/click-12345-15678"
+        assert result["destination_url"] == "https://example.com/holiday-sale"
+        assert result["image_url"] == "https://www.ftjcfx.com/image-12345-15678"
+        assert result["epc"] == 0.75
+        assert result["status"] == "active"
+        # AdRotate fields
+        assert result["advert_name"] == "300X250-99-HolidaySaleBanner300x250-15678-General"
+        assert "anrdoezrs.net" in result["bannercode"]
+        assert result["campaign_name"] == "General Promotion"
+        assert result["enable_stats"] == "Y"
+        assert "raw_hash" in result
+
+    def test_map_ad_text_link(self):
+        """Should map CJ text link with 0x0 dimensions."""
+        mapper = get_mapper("cj")
+        raw = {
+            "link-id": "98765",
+            "link-name": "Shop Now Text Link",
+            "link-type": "Text Link",
+            "clickUrl": "https://www.anrdoezrs.net/click-12345-98765",
+            "destination": "https://example.com/shop",
+            "creative-width": "",
+            "creative-height": "",
+            "image-url": "",
+            "link-code-html": "",
+            "seven-day-epc": "N/A",
+        }
+        result = mapper.map_ad(raw, advertiser_id=50)
+
+        assert result["network_link_id"] == "98765"
+        assert result["creative_type"] == "text"
+        assert result["width"] == 0
+        assert result["height"] == 0
+        assert result["image_url"] == ""
+        assert result["epc"] == 0.0  # N/A should parse to 0.0
+        assert result["advert_name"] == "0X0-50-ShopNowTextLink-98765-General"
 
 
 class TestImpactMapper:
