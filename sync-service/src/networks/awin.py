@@ -146,6 +146,8 @@ class AwinClient(NetworkClient):
             response.raise_for_status()
 
             payload = response.json()
+            import json
+            print(json.dumps(payload, indent=2)[:5000])
 
             # Some APIs return list, others wrap
             if isinstance(payload, list):
