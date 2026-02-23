@@ -33,16 +33,17 @@ def main() -> int:
     # Initialize network clients based on available credentials
     clients = []
 
-    if config.flexoffers_api_key:
-        clients.append(FlexOffersClient(config.flexoffers_api_key))
-        logger.info("FlexOffers client initialized")
+    if config.flexoffers_domain_keys:
+        for domain, api_key in config.flexoffers_domain_keys.items():
+            clients.append(FlexOffersClient(api_key, domain=domain))
+            logger.info(f"FlexOffers client initialized for {domain}")
 
     if config.awin_api_token and config.awin_publisher_id:
         clients.append(AwinClient(config.awin_api_token, config.awin_publisher_id))
         logger.info("Awin client initialized")
 
-    if config.cj_api_token and config.cj_website_id:
-        clients.append(CJClient(config.cj_api_token, config.cj_website_id))
+    if config.cj_api_token and config.cj_cid and config.cj_website_id:
+        clients.append(CJClient(config.cj_api_token, config.cj_cid, config.cj_website_id))
         logger.info("CJ client initialized")
 
     if config.impact_account_sid and config.impact_auth_token:
@@ -58,7 +59,8 @@ def main() -> int:
         for client in clients:
             try:
                 logger.info(f"Syncing {client.network_name}...")
-                client.sync(conn)
+                site_domain = getattr(client, "domain", None)
+                client.sync(conn, site_domain=site_domain)
                 logger.info(f"Completed {client.network_name} sync")
             except Exception as e:
                 logger.error(f"Error syncing {client.network_name}: {e}")

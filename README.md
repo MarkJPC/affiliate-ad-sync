@@ -72,7 +72,81 @@ affiliate-ad-sync/
 
 ---
 
-## How to Run Locally
+## Quick Start (SQLite - Recommended for Local Dev)
+
+The fastest way to get started locally - no MySQL installation required!
+
+### Prerequisites
+
+- Python 3.12+ with [uv](https://docs.astral.sh/uv/) package manager
+- PHP 8.2+ with Composer
+- Node.js 18+ (for Tailwind CSS compilation in Laravel)
+
+### 1. Clone and Set Up Database
+
+```bash
+git clone https://github.com/MARKJPC/affiliate-ad-sync.git
+cd affiliate-ad-sync
+
+# Create SQLite database with seed data
+python setup-dev-db.py
+
+# Verify it worked
+python setup-dev-db.py --verify
+```
+
+### 2. Run the Sync Service
+
+```bash
+cd sync-service
+
+# Copy environment template (SQLite is pre-configured)
+cp .env.example .env
+
+# Add your API keys to .env:
+# FLEXOFFERS_DOMAIN_KEYS=...
+# AWIN_API_TOKEN=...
+
+# Install dependencies
+uv sync
+
+# Run sync manually
+uv run python -m src.main
+
+# Run tests
+uv run pytest
+```
+
+### 3. Run the Admin Dashboard
+
+```bash
+cd admin-dashboard
+
+# Install PHP dependencies
+composer install
+
+# Copy environment template (SQLite is pre-configured)
+cp .env.example .env
+
+# Generate app key
+php artisan key:generate
+
+# Install and compile frontend assets
+npm install
+npm run dev
+
+# Start development server
+php artisan serve
+# Visit http://localhost:8000
+```
+
+Both services share the same `database/affiliate_ads.sqlite` file, so data synced by Python is immediately visible in Laravel.
+
+---
+
+## Alternative: MySQL Setup
+
+If you need MySQL (for production parity or testing), follow these instructions instead.
 
 ### Prerequisites
 
@@ -90,7 +164,7 @@ cd affiliate-ad-sync
 
 ### 2. Set Up the Database
 
-**Option A: Local MySQL (recommended)**
+**Option A: Local MySQL**
 ```bash
 mysql -u root -p
 CREATE DATABASE affiliate_ads;
@@ -111,13 +185,6 @@ docker run -d \
 docker exec -i affiliate-mysql mysql -uroot -prootpass affiliate_ads < database/schema.mysql.sql
 ```
 
-**Option C: PostgreSQL (alternative)**
-```bash
-# If you prefer PostgreSQL for local dev, use the Postgres schema instead
-psql -U postgres -c "CREATE DATABASE affiliate_ads;"
-psql -U postgres -d affiliate_ads -f database/schema.postgres.sql
-```
-
 ### 3. Run the Sync Service
 
 ```bash
@@ -126,7 +193,8 @@ cd sync-service
 # Copy environment template
 cp .env.example .env
 
-# Edit .env with your credentials:
+# Edit .env - comment out DB_PATH and configure MySQL:
+# # DB_PATH=../database/affiliate_ads.sqlite
 # MYSQL_HOST=localhost
 # MYSQL_USER=root
 # MYSQL_PASSWORD=rootpass
@@ -158,7 +226,7 @@ cp .env.example .env
 # Generate app key
 php artisan key:generate
 
-# Edit .env with database credentials:
+# Edit .env with MySQL credentials:
 # DB_CONNECTION=mysql
 # DB_HOST=127.0.0.1
 # DB_PORT=3306
@@ -322,9 +390,8 @@ MYSQL_USER=affiliate_user
 MYSQL_PASSWORD=********
 MYSQL_DATABASE=affiliate_ads
 
-# FlexOffers (Mark)
-FLEXOFFERS_API_KEY_RVTRAVEL=a0fb95df-e707-4e71-877a-f5bb213ab26e
-FLEXOFFERS_API_KEY_CAMPING=604892e9-596a-43dc-9aff-5c4de8b805a1
+# FlexOffers (Mark) - Format: domain1:key1,domain2:key2
+FLEXOFFERS_DOMAIN_KEYS=www.rvtravellife.com:a0fb95df-...,thisoldcampsite.com:604892e9-...
 
 # Awin (Nadia)
 AWIN_API_TOKEN=a0858024-b0b0-4cec-b2e0-43706e161709
@@ -392,7 +459,7 @@ jobs:
 
 **Required GitHub Secrets:**
 - `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`
-- `FLEXOFFERS_API_KEY_RVTRAVEL`, `FLEXOFFERS_API_KEY_CAMPING`
+- `FLEXOFFERS_DOMAIN_KEYS`
 - `AWIN_API_TOKEN`
 - `CJ_API_KEY` (when available)
 - `IMPACT_ACCOUNT_SID`, `IMPACT_AUTH_TOKEN` (when available)

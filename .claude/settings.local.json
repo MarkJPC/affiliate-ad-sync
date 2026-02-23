@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /mnt/c/Users/Geniu/Documents/Career/Projects/RIIPEN/Affiliate_Ad_Automation/affiliate-ad-sync/admin-dashboard && php -l app/Http/Controllers/AdvertiserController.php 2>&1)"
+    ]
+  }
+}

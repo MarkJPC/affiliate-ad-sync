@@ -1,6 +1,7 @@
 """FlexOffers API client - Mark's responsibility."""
 
 import logging
+import time
 
 import httpx
 
@@ -63,7 +64,6 @@ class FlexOffersClient(NetworkClient):
 
             # Retry logic for this page
             response = None
-            last_error = None
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
                     response = self._client.get(
@@ -71,9 +71,24 @@ class FlexOffersClient(NetworkClient):
                         headers=self._get_headers(),
                         params=params,
                     )
-                    break  # Success, exit retry loop
+                    # Handle 403 rate limit with exponential backoff
+                    if response.status_code == 403:
+                        if attempt < MAX_RETRIES:
+                            wait_time = 2 ** attempt  # 2s, 4s, 8s
+                            logger.warning(
+                                f"Rate limit hit on page {page} (attempt {attempt}/{MAX_RETRIES}), "
+                                f"waiting {wait_time}s before retry..."
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        # All retries exhausted
+                        logger.warning(
+                            f"Rate limit exceeded on page {page} after {MAX_RETRIES} retries, "
+                            f"returning {len(advertisers)} partial results{domain_info}"
+                        )
+                        return advertisers
+                    break  # Success or other status, exit retry loop
                 except httpx.RequestError as e:
-                    last_error = e
                     logger.warning(
                         f"Request error on page {page} (attempt {attempt}/{MAX_RETRIES}): {e}"
                     )
@@ -90,12 +105,6 @@ class FlexOffersClient(NetworkClient):
             if response.status_code == 401:
                 raise httpx.HTTPStatusError(
                     "Invalid FlexOffers API key",
-                    request=response.request,
-                    response=response,
-                )
-            if response.status_code == 403:
-                raise httpx.HTTPStatusError(
-                    "FlexOffers rate limit exceeded",
                     request=response.request,
                     response=response,
                 )
@@ -145,13 +154,14 @@ class FlexOffersClient(NetworkClient):
         return advertisers
 
     def fetch_ads(self, advertiser_id: str) -> list[dict]:
-        """Fetch all banner ads for an advertiser.
+        """Fetch all ads for an advertiser (banners and text links).
 
         Args:
             advertiser_id: The FlexOffers advertiser ID.
 
         Returns:
-            List of raw link/promotion dicts from the API (banners only).
+            List of raw link/promotion dicts from the API.
+            Includes both banners (with dimensions) and text links (0x0).
             May return partial results if some pages fail after retries.
         """
         ads: list[dict] = []
@@ -164,7 +174,6 @@ class FlexOffersClient(NetworkClient):
             params = {
                 "page": page,
                 "pageSize": page_size,
-                "linkType": "Banners",
                 "advertiserIds": advertiser_id,
             }
 
@@ -177,7 +186,23 @@ class FlexOffersClient(NetworkClient):
                         headers=self._get_headers(),
                         params=params,
                     )
-                    break  # Success, exit retry loop
+                    # Handle 403 rate limit with exponential backoff
+                    if response.status_code == 403:
+                        if attempt < MAX_RETRIES:
+                            wait_time = 2 ** attempt  # 2s, 4s, 8s
+                            logger.warning(
+                                f"Rate limit hit for advertiser {advertiser_id} "
+                                f"(attempt {attempt}/{MAX_RETRIES}), waiting {wait_time}s before retry..."
+                            )
+                            time.sleep(wait_time)
+                            continue
+                        # All retries exhausted
+                        logger.warning(
+                            f"Rate limit exceeded for advertiser {advertiser_id} after {MAX_RETRIES} retries, "
+                            f"returning {len(ads)} partial results"
+                        )
+                        return ads
+                    break  # Success or other status, exit retry loop
                 except httpx.RequestError as e:
                     logger.warning(
                         f"Request error fetching ads for advertiser {advertiser_id} "
@@ -199,12 +224,6 @@ class FlexOffersClient(NetworkClient):
                     request=response.request,
                     response=response,
                 )
-            if response.status_code == 403:
-                raise httpx.HTTPStatusError(
-                    "FlexOffers rate limit exceeded",
-                    request=response.request,
-                    response=response,
-                )
             if response.status_code == 204:
                 # No content - empty result
                 logger.debug(f"Advertiser {advertiser_id} page {page}: no content (204)")
@@ -221,33 +240,30 @@ class FlexOffersClient(NetworkClient):
 
             data = response.json()
 
-            # Handle both list response and paginated object response
-            if isinstance(data, list):
-                page_ads = data
+            # API returns {"results": [...], "totalCount": N}
+            if isinstance(data, dict):
+                page_ads = data.get("results", [])
             else:
-                page_ads = data.get("links", data.get("promotions", data.get("data", [])))
+                page_ads = data if isinstance(data, list) else []
 
             if not page_ads:
                 logger.debug(f"Advertiser {advertiser_id} page {page}: empty response")
                 break
 
-            # Filter to only include ads with valid dimensions
-            valid_ads = [
-                ad for ad in page_ads
-                if ad.get("bannerWidth", 0) > 0 and ad.get("bannerHeight", 0) > 0
-            ]
-
-            # Log each valid ad at DEBUG level
-            for ad in valid_ads:
+            # Log each ad at DEBUG level
+            for ad in page_ads:
+                link_type = ad.get("linkType", "unknown")
+                width = ad.get("bannerWidth") or 0
+                height = ad.get("bannerHeight") or 0
                 logger.debug(
-                    f"Ad: id={ad.get('id')}, name={ad.get('name')}, "
-                    f"{ad.get('bannerWidth')}x{ad.get('bannerHeight')}"
+                    f"Ad: id={ad.get('linkId')}, name={ad.get('linkName')}, "
+                    f"type={link_type}, {width}x{height}"
                 )
 
-            ads.extend(valid_ads)
+            # Store all ads; export logic filters by dimension
+            ads.extend(page_ads)
             logger.debug(
-                f"Advertiser {advertiser_id} page {page}: "
-                f"fetched {len(page_ads)} ads ({len(valid_ads)} with valid dimensions)"
+                f"Advertiser {advertiser_id} page {page}: fetched {len(page_ads)} ads"
             )
 
             # If we got fewer than page_size, we've reached the end
