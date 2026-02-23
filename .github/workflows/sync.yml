@@ -7,11 +7,19 @@ on:
   workflow_dispatch: # Allow manual trigger
 
 env:
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  FLEXOFFERS_API_KEY: ${{ secrets.FLEXOFFERS_API_KEY }}
+  # MySQL (cPanel production database)
+  MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+  MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+  MYSQL_USER: ${{ secrets.MYSQL_USER }}
+  MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+  MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+  MYSQL_SSL_CA: ${{ secrets.MYSQL_SSL_CA }}
+  # Affiliate network API keys
+  FLEXOFFERS_DOMAIN_KEYS: ${{ secrets.FLEXOFFERS_DOMAIN_KEYS }}
   AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
   AWIN_PUBLISHER_ID: ${{ secrets.AWIN_PUBLISHER_ID }}
   CJ_API_TOKEN: ${{ secrets.CJ_API_TOKEN }}
+  CJ_CID: ${{ secrets.CJ_CID }}
   CJ_WEBSITE_ID: ${{ secrets.CJ_WEBSITE_ID }}
   IMPACT_ACCOUNT_SID: ${{ secrets.IMPACT_ACCOUNT_SID }}
   IMPACT_AUTH_TOKEN: ${{ secrets.IMPACT_AUTH_TOKEN }}

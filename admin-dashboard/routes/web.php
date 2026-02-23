@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
@@ -16,8 +17,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Phase 2 — Advertiser Grid (stub routes for sidebar links)
-    Route::get('/advertisers', fn () => abort(501, 'Coming soon'))->name('advertisers.index');
+    // Phase 2 — Advertiser Grid
+    Route::get('/advertisers', [AdvertiserController::class, 'index'])->name('advertisers.index');
 
     // Phase 2 — Ad Review
     Route::get('/ads', fn () => abort(501, 'Coming soon'))->name('ads.index');
@@ -50,10 +51,10 @@ Route::middleware('auth')->group(function () {
 
     // AJAX endpoints (return JSON) — Phase 2
     Route::prefix('api')->group(function () {
-        Route::patch('/advertisers/{advertiser}/rules/{site}', fn () => abort(501))->name('api.advertisers.rules.update');
-        Route::patch('/advertisers/{advertiser}/weight', fn () => abort(501))->name('api.advertisers.weight.update');
-        Route::post('/advertisers/bulk-rules', fn () => abort(501))->name('api.advertisers.bulk-rules');
-        Route::post('/advertisers/bulk-weight', fn () => abort(501))->name('api.advertisers.bulk-weight');
+        Route::patch('/advertisers/{advertiser}/rules/{site}', [AdvertiserController::class, 'updateRule'])->name('api.advertisers.rules.update');
+        Route::patch('/advertisers/{advertiser}/weight', [AdvertiserController::class, 'updateWeight'])->name('api.advertisers.weight.update');
+        Route::post('/advertisers/bulk-rules', [AdvertiserController::class, 'bulkRules'])->name('api.advertisers.bulk-rules');
+        Route::post('/advertisers/bulk-weight', [AdvertiserController::class, 'bulkWeight'])->name('api.advertisers.bulk-weight');
         Route::patch('/ads/{ad}/approval', fn () => abort(501))->name('api.ads.approval.update');
         Route::post('/ads/bulk-approval', fn () => abort(501))->name('api.ads.bulk-approval');
         Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
