@@ -128,19 +128,28 @@ class TestAwinMapper:
     def test_map_advertiser(self):
         """Should map advertiser response correctly."""
         mapper = get_mapper("awin")
-        raw = {"id": "67890", "name": "Awin Merchant", "status": "active"}
+        raw = {
+            "id": "67890",
+            "name": "Awin Merchant",
+            "status": "active",
+            "displayUrl": "https://merchant.example.com",
+            "primarySector": "Retail",
+            "epc": "0.35",
+        }
         result = mapper.map_advertiser(raw)
 
         assert result["network"] == "awin"
         assert result["network_program_id"] == "67890"
+        assert result["network_program_name"] == "Awin Merchant"
+        assert result["status"] == "active"
+        assert result["website_url"] == "https://merchant.example.com"
+        assert result["category"] == "Retail"
+        assert result["epc"] == 0.35
+        assert "raw_hash" in result
+        assert len(result["raw_hash"]) == 64  # SHA-256 hex
 
-    def test_map_ad(self):
-        """Should map Awin promotion/offer to canonical schema.
-
-        NOTE: Awin mapper is incomplete - it doesn't return all required
-        fields for database insert (missing advert_name, bannercode, etc.).
-        This test documents the current behavior.
-        """
+    def test_map_ad_promotion(self):
+        """Should map Awin promotion/offer to canonical schema."""
         mapper = get_mapper("awin")
         raw = {
             "promotionId": "12345",
@@ -153,12 +162,123 @@ class TestAwinMapper:
         result = mapper.map_ad(raw, advertiser_id=1)
 
         assert result["network"] == "awin"
-        assert result["network_ad_id"] == "12345"
+        assert result["network_link_id"] == "12345"
         assert result["advertiser_id"] == 1
-        assert result["creative_type"] == "voucher"
+        assert result["creative_type"] == "text"
         assert "awin1.com" in result["tracking_url"]
         assert result["destination_url"] == "https://example.com/offer"
         assert result["status"] == "active"
+        assert result["advert_name"] == "0X0-1-20OffEverything-12345-General"
+        assert 'rel="sponsored"' in result["bannercode"]
+        assert "20% Off Everything" in result["bannercode"]
+        assert result["width"] == 0
+        assert result["height"] == 0
+        assert result["image_url"] == ""
+        assert result["campaign_name"] == "General Promotion"
+        assert result["enable_stats"] == "Y"
+        assert "raw_hash" in result
+
+    def test_map_ad_promotion_type(self):
+        """Promotion type maps to creative_type='html'."""
+        mapper = get_mapper("awin")
+        raw = {
+            "promotionId": "99",
+            "type": "promotion",
+            "urlTracking": "https://www.awin1.com/track",
+            "title": "Spring Sale",
+        }
+        result = mapper.map_ad(raw, advertiser_id=1)
+        assert result["creative_type"] == "html"
+
+    def test_map_ad_voucher_with_code(self):
+        """Voucher code should appear in bannercode text."""
+        mapper = get_mapper("awin")
+        raw = {
+            "promotionId": "555",
+            "type": "voucher",
+            "urlTracking": "https://www.awin1.com/track",
+            "title": "Save 10%",
+            "voucher": {"code": "SAVE10"},
+        }
+        result = mapper.map_ad(raw, advertiser_id=1)
+        assert result["creative_type"] == "text"
+        assert "SAVE10" in result["bannercode"]
+
+    def test_map_ad_creative_banner(self):
+        """Creative with dimensions maps to banner with image."""
+        mapper = get_mapper("awin")
+        raw = {
+            "_source": "creatives",
+            "id": "777",
+            "name": "Summer Banner 300x250",
+            "imageUrl": "https://cdn.awin.com/banner.jpg",
+            "clickThroughUrl": "https://www.awin1.com/cread.php?id=777",
+            "width": 300,
+            "height": 250,
+            "code": '<a href="https://www.awin1.com/cread.php?id=777"><img src="https://cdn.awin.com/banner.jpg" /></a>',
+        }
+        result = mapper.map_ad(raw, advertiser_id=2)
+
+        assert result["network"] == "awin"
+        assert result["network_link_id"] == "777"
+        assert result["creative_type"] == "banner"
+        assert result["width"] == 300
+        assert result["height"] == 250
+        assert result["image_url"] == "https://cdn.awin.com/banner.jpg"
+        assert result["tracking_url"] == "https://www.awin1.com/cread.php?id=777"
+        assert result["advert_name"] == "300X250-2-SummerBanner300x250-777-General"
+        assert "awin1.com" in result["bannercode"]
+        assert "banner.jpg" in result["bannercode"]
+
+    def test_map_ad_creative_no_code(self):
+        """Creative without HTML code constructs fallback bannercode."""
+        mapper = get_mapper("awin")
+        raw = {
+            "_source": "creatives",
+            "id": "888",
+            "name": "Logo",
+            "imageUrl": "https://cdn.awin.com/logo.png",
+            "clickThroughUrl": "https://www.awin1.com/track/888",
+            "width": 160,
+            "height": 600,
+            "code": "",
+        }
+        result = mapper.map_ad(raw, advertiser_id=3)
+
+        assert result["creative_type"] == "banner"
+        assert 'href="https://www.awin1.com/track/888"' in result["bannercode"]
+        assert 'src="https://cdn.awin.com/logo.png"' in result["bannercode"]
+        assert 'rel="sponsored"' in result["bannercode"]
+
+    def test_map_ad_adrotate_defaults(self):
+        """All AdRotate default fields should be present and correct."""
+        mapper = get_mapper("awin")
+        raw = {
+            "promotionId": "999",
+            "type": "voucher",
+            "urlTracking": "https://example.com",
+            "title": "Test",
+        }
+        result = mapper.map_ad(raw, advertiser_id=1)
+
+        assert result["campaign_name"] == "General Promotion"
+        assert result["enable_stats"] == "Y"
+        assert result["show_everyone"] == "Y"
+        assert result["show_desktop"] == "Y"
+        assert result["show_mobile"] == "Y"
+        assert result["show_tablet"] == "Y"
+        assert "weight" not in result
+        assert result["autodelete"] == "Y"
+        assert result["autodisable"] == "N"
+        assert result["budget"] == 0
+        assert result["click_rate"] == 0
+        assert result["impression_rate"] == 0
+        assert result["geo_cities"] == "a:0:{}"
+        assert result["geo_states"] == "a:0:{}"
+        assert result["geo_countries"] == "a:0:{}"
+        assert result["state_required"] == "N"
+        assert result["schedule_start"] == 0
+        assert result["schedule_end"] == 2650941780
 
 
 class TestCJMapper:
