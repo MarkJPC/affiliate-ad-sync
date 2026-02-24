@@ -1,5 +1,9 @@
 """
 Awin API response mapper - Nadia's responsibility.
+
+Maps two types of raw dicts to canonical ad schema:
+- Promotions (from POST /publisher/{publisherId}/promotions) — vouchers/text offers
+- Creatives (from GET /publishers/{publisherId}/advertisers/{advertiserId}/creatives) — banners
 """
 
 import re
@@ -40,12 +44,21 @@ class AwinMapper(Mapper):
 
     def map_ad(self, raw: dict, advertiser_id: int) -> dict:
         """
-        Map Awin promotion/voucher object to canonical ads schema used by AdRotate.
+        Map Awin raw dict to canonical ads schema.
 
-        Observed raw fields from:
-        POST /publisher/{publisherId}/promotions
+        Dispatches to _map_creative() or _map_promotion() based on the source.
+        """
+        if raw.get("_source") == "creatives" or (
+            raw.get("imageUrl") and not raw.get("promotionId")
+        ):
+            return self._map_creative(raw, advertiser_id)
+        return self._map_promotion(raw, advertiser_id)
 
-        Example keys:
+    def _map_promotion(self, raw: dict, advertiser_id: int) -> dict:
+        """
+        Map Awin promotion/voucher object to canonical ads schema.
+
+        Raw fields from POST /publisher/{publisherId}/promotions:
         promotionId, type, advertiser, title, description, terms, startDate, endDate,
         status, url, urlTracking, dateAdded, campaign, regions, categories, voucher
         """
@@ -87,20 +100,96 @@ class AwinMapper(Mapper):
 
         # Normalize status to match other mappers
         status_raw = str(raw.get("status") or "").lower()
-        # Treat non-expired statuses as active; be conservative if needed
         status = "active" if status_raw not in {"expired", "inactive"} else "paused"
 
+        return self._build_ad_dict(
+            network_link_id=promo_id,
+            advertiser_id=advertiser_id,
+            creative_type=creative_type,
+            tracking_url=tracking_url,
+            destination_url=destination_url,
+            status=status,
+            name=name,
+            advert_name=advert_name,
+            bannercode=bannercode,
+            image_url=image_url,
+            width=width,
+            height=height,
+            raw=raw,
+        )
+
+    def _map_creative(self, raw: dict, advertiser_id: int) -> dict:
+        """
+        Map Awin creative (banner) object to canonical ads schema.
+
+        Raw fields from GET /publishers/{publisherId}/advertisers/{advertiserId}/creatives:
+        id, name, imageUrl, clickThroughUrl, width, height, code
+        """
+        creative_id = str(raw.get("id") or "")
+        name = raw.get("name") or ""
+        image_url = raw.get("imageUrl") or ""
+        tracking_url = raw.get("clickThroughUrl") or ""
+        width = int(raw.get("width") or 0)
+        height = int(raw.get("height") or 0)
+        code = raw.get("code") or ""
+
+        # Determine creative_type
+        creative_type = "banner" if (width > 0 and height > 0) else "html"
+
+        # Build advert_name
+        sanitized_name = self._sanitize_name(str(name))
+        advert_name = f"{width}X{height}-{advertiser_id}-{sanitized_name}-{creative_id}-General"
+
+        # Use provided HTML code, or construct fallback bannercode
+        if code.strip():
+            bannercode = code
+        else:
+            bannercode = self._construct_bannercode(tracking_url, image_url)
+
+        return self._build_ad_dict(
+            network_link_id=creative_id,
+            advertiser_id=advertiser_id,
+            creative_type=creative_type,
+            tracking_url=tracking_url,
+            destination_url="",
+            status="active",
+            name=name,
+            advert_name=advert_name,
+            bannercode=bannercode,
+            image_url=image_url,
+            width=width,
+            height=height,
+            raw=raw,
+        )
+
+    def _build_ad_dict(
+        self,
+        *,
+        network_link_id: str,
+        advertiser_id: int,
+        creative_type: str,
+        tracking_url: str,
+        destination_url: str,
+        status: str,
+        name: str,
+        advert_name: str,
+        bannercode: str,
+        image_url: str,
+        width: int,
+        height: int,
+        raw: dict,
+    ) -> dict:
+        """Build the canonical ad dict with all AdRotate fields."""
         return {
             # Internal fields
             "network": "awin",
-            "network_link_id": promo_id,
+            "network_link_id": network_link_id,
             "network_program_id": str(advertiser_id),
             "advertiser_id": advertiser_id,
             "creative_type": creative_type,
             "tracking_url": tracking_url,
             "destination_url": destination_url,
             "status": status,
-            # EPC comes from separate reporting endpoints (not promotions response)
             "epc": 0.0,
             "raw_hash": Mapper.compute_hash(raw),
             "name": name,
@@ -143,6 +232,10 @@ class AwinMapper(Mapper):
             "schedule_start": 0,
             "schedule_end": 2650941780,
         }
+
+    def _construct_bannercode(self, tracking_url: str, image_url: str) -> str:
+        """Construct fallback bannercode HTML for banner creatives."""
+        return f'<a href="{tracking_url}" rel="sponsored"><img src="{image_url}" /></a>'
 
     def _sanitize_name(self, name: str) -> str:
         """Remove special characters and spaces for advert_name."""

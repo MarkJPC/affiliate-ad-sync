@@ -50,11 +50,7 @@ class TestAwinSync:
     """E2E test for Awin sync pipeline."""
 
     def test_sync(self, awin_client, conn):
-        """Run full sync for Awin with verbose output.
-
-        NOTE: Awin mapper may be incomplete. This test may fail
-        with KeyError if map_ad doesn't return all required fields.
-        """
+        """Run full sync for Awin with verbose output."""
         print("\n" + "=" * 60)
         print("AWIN E2E SYNC TEST")
         print("=" * 60)
