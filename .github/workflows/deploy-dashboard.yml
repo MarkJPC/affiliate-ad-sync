@@ -1,0 +1,97 @@
+name: Deploy Admin Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "admin-dashboard/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+
+      - name: Install Composer dependencies
+        working-directory: admin-dashboard
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build frontend assets
+        working-directory: admin-dashboard
+        run: |
+          npm ci
+          npm run build
+
+      - name: Restructure for cPanel deploy
+        working-directory: admin-dashboard
+        run: |
+          mkdir -p ../deploy
+
+          # Public files go to deploy root (the document root)
+          cp -a public/. ../deploy/
+
+          # Everything else goes into app-core/
+          mkdir -p ../deploy/app-core
+          for item in *; do
+            [ "$item" = "public" ] && continue
+            [ "$item" = "node_modules" ] && continue
+            cp -a "$item" ../deploy/app-core/
+          done
+
+          # Rewrite index.php paths: /../ → /app-core/
+          sed -i "s|__DIR__\.'/\.\./|__DIR__.'/app-core/|g" ../deploy/index.php
+
+          # Protect app-core from direct web access
+          echo "Deny from all" > ../deploy/app-core/.htaccess
+
+          # Ensure storage directories exist
+          mkdir -p ../deploy/app-core/storage/framework/{sessions,views,cache}
+          mkdir -p ../deploy/app-core/storage/logs
+
+      - name: Create .env file
+        env:
+          LARAVEL_APP_KEY: ${{ secrets.LARAVEL_APP_KEY }}
+          DB_HOST: ${{ secrets.MYSQL_HOST }}
+          DB_PORT: ${{ secrets.MYSQL_PORT }}
+          DB_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          DB_USERNAME: ${{ secrets.MYSQL_USER }}
+          DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          cat > deploy/app-core/.env << EOF
+          APP_NAME="Affiliate Ad Admin"
+          APP_ENV=production
+          APP_DEBUG=false
+          APP_KEY=${LARAVEL_APP_KEY}
+          APP_URL=https://ads.thepartshops.com
+          DB_CONNECTION=mysql
+          DB_HOST=${DB_HOST}
+          DB_PORT=${DB_PORT}
+          DB_DATABASE=${DB_DATABASE}
+          DB_USERNAME=${DB_USERNAME}
+          DB_PASSWORD=${DB_PASSWORD}
+          SESSION_DRIVER=file
+          CACHE_STORE=file
+          EOF
+
+      - name: Deploy via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./deploy/
+          server-dir: /
