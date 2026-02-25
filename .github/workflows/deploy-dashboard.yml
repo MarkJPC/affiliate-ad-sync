@@ -10,6 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -61,6 +62,15 @@ jobs:
           mkdir -p ../deploy/app-core/storage/framework/{sessions,views,cache}
           mkdir -p ../deploy/app-core/storage/logs
 
+          # Clean up files that don't need to be deployed
+          cd ../deploy/app-core
+          rm -rf tests node_modules .env.example .gitignore .gitattributes
+          rm -rf vendor/*/*/tests vendor/*/*/Tests vendor/*/*/test
+          rm -rf vendor/*/*/docs vendor/*/*/doc vendor/*/*/CHANGELOG*
+          rm -rf vendor/*/*/.git vendor/*/*/.github
+          find vendor -name "*.md" -delete 2>/dev/null || true
+          find vendor -name "LICENSE*" -delete 2>/dev/null || true
+
       - name: Create .env file
         env:
           LARAVEL_APP_KEY: ${{ secrets.LARAVEL_APP_KEY }}
@@ -86,7 +96,7 @@ jobs:
           CACHE_STORE=file
           EOF
 
-      - name: Deploy via FTPS
+      - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -95,3 +105,4 @@ jobs:
           protocol: ftps
           local-dir: ./deploy/
           server-dir: /
+          dangerous-clean-slate: true
