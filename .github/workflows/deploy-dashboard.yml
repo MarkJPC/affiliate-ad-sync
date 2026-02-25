@@ -103,14 +103,14 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           sudo apt-get install -y -qq lftp
-          lftp -e "
-            set ssl:verify-certificate false;
-            set ftp:ssl-force true;
-            set ftp:ssl-protect-data true;
-            set mirror:parallel-transfer-count 5;
-            set net:timeout 30;
-            set net:max-retries 3;
-            set net:reconnect-interval-base 5;
-            mirror --reverse --delete --verbose --parallel=5 ./deploy/ /;
-            quit;
-          " -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST"
+          lftp <<LFTP_SCRIPT
+          set ssl:verify-certificate false
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set net:timeout 30
+          set net:max-retries 3
+          set net:reconnect-interval-base 5
+          open -u ${FTP_USER},${FTP_PASSWORD} ftps://${FTP_HOST}
+          mirror --reverse --delete --verbose --parallel=5 ./deploy/ /
+          quit
+          LFTP_SCRIPT
