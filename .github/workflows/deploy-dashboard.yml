@@ -58,6 +58,10 @@ jobs:
           # Protect app-core from direct web access
           echo "Deny from all" > ../deploy/app-core/.htaccess
 
+          # Copy build assets where Vite expects them (app-core/public/build/)
+          mkdir -p ../deploy/app-core/public/build
+          cp -a ../deploy/build/. ../deploy/app-core/public/build/
+
           # Ensure storage directories exist
           mkdir -p ../deploy/app-core/storage/framework/{sessions,views,cache}
           mkdir -p ../deploy/app-core/storage/logs
