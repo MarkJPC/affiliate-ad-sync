@@ -44,6 +44,12 @@ jobs:
         working-directory: sync-service
         run: uv sync
 
+      - name: Write SSL CA cert (if provided)
+        if: env.MYSQL_SSL_CA != ''
+        run: |
+          echo "$MYSQL_SSL_CA" > /tmp/mysql-ca-cert.pem
+          echo "MYSQL_SSL_CA=/tmp/mysql-ca-cert.pem" >> $GITHUB_ENV
+
       - name: Run sync
         working-directory: sync-service
-        run: uv run python src/main.py
+        run: uv run python -m src.main

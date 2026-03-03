@@ -84,21 +84,21 @@ jobs:
           DB_USERNAME: ${{ secrets.MYSQL_USER }}
           DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         run: |
-          cat > deploy/app-core/.env << EOF
-          APP_NAME="Affiliate Ad Admin"
-          APP_ENV=production
-          APP_DEBUG=false
-          APP_KEY=${LARAVEL_APP_KEY}
-          APP_URL=https://ads.thepartshops.com
-          DB_CONNECTION=mysql
-          DB_HOST=${DB_HOST}
-          DB_PORT=${DB_PORT}
-          DB_DATABASE=${DB_DATABASE}
-          DB_USERNAME=${DB_USERNAME}
-          DB_PASSWORD=${DB_PASSWORD}
-          SESSION_DRIVER=file
-          CACHE_STORE=file
-          EOF
+          {
+            echo 'APP_NAME="Affiliate Ad Admin"'
+            echo "APP_ENV=production"
+            echo "APP_DEBUG=false"
+            echo "APP_KEY=${LARAVEL_APP_KEY}"
+            echo "APP_URL=https://ads.thepartshops.com"
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=${DB_HOST}"
+            echo "DB_PORT=${DB_PORT}"
+            echo "DB_DATABASE=${DB_DATABASE}"
+            echo "DB_USERNAME=${DB_USERNAME}"
+            echo "DB_PASSWORD=${DB_PASSWORD}"
+            echo "SESSION_DRIVER=file"
+            echo "CACHE_STORE=file"
+          } > deploy/app-core/.env
 
       - name: Deploy via FTPS
         env:
