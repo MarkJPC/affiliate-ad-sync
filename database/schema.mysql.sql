@@ -177,7 +177,9 @@ CREATE TABLE ads (
     INDEX idx_dimensions (width, height),
     INDEX idx_approval (approval_status),
     INDEX idx_status (status),
-    INDEX idx_network (network)
+    INDEX idx_network (network),
+    INDEX idx_creative_type (creative_type),
+    INDEX idx_last_synced_at (last_synced_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

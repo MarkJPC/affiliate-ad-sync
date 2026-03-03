@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - Affiliate Ad Sync</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
     <script>
         if (localStorage.getItem('darkMode') === 'true') {
             document.documentElement.classList.add('dark');
@@ -34,5 +35,6 @@
             @yield('content')
         </div>
     </main>
+    @livewireScripts
 </body>
 </html>

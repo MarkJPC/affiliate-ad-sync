@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdController;
 use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
@@ -21,7 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/advertisers', [AdvertiserController::class, 'index'])->name('advertisers.index');
 
     // Phase 2 — Ad Review
-    Route::get('/ads', fn () => abort(501, 'Coming soon'))->name('ads.index');
+    Route::get('/ads', fn () => view('ads.index'))->name('ads.index');
 
     // Phase 2 — CSV Export
     Route::get('/export', fn () => abort(501, 'Coming soon'))->name('export.index');
@@ -55,8 +56,10 @@ Route::middleware('auth')->group(function () {
         Route::patch('/advertisers/{advertiser}/weight', [AdvertiserController::class, 'updateWeight'])->name('api.advertisers.weight.update');
         Route::post('/advertisers/bulk-rules', [AdvertiserController::class, 'bulkRules'])->name('api.advertisers.bulk-rules');
         Route::post('/advertisers/bulk-weight', [AdvertiserController::class, 'bulkWeight'])->name('api.advertisers.bulk-weight');
-        Route::patch('/ads/{ad}/approval', fn () => abort(501))->name('api.ads.approval.update');
-        Route::post('/ads/bulk-approval', fn () => abort(501))->name('api.ads.bulk-approval');
+        Route::patch('/ads/{ad}/approval', [AdController::class, 'updateApproval'])->name('api.ads.approval.update');
+        Route::patch('/ads/{ad}/weight', [AdController::class, 'updateWeight'])->name('api.ads.weight.update');
+        Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
+        Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
         Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
     });
 });

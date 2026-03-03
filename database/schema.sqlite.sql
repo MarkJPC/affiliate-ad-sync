@@ -164,6 +164,8 @@ CREATE INDEX idx_ads_network ON ads(network);
 CREATE INDEX idx_ads_dimensions ON ads(width, height);
 CREATE INDEX idx_ads_approval ON ads(approval_status);
 CREATE INDEX idx_ads_status ON ads(status);
+CREATE INDEX idx_ads_creative_type ON ads(creative_type);
+CREATE INDEX idx_ads_last_synced_at ON ads(last_synced_at);
 
 CREATE TRIGGER trg_ads_updated_at
     AFTER UPDATE ON ads
