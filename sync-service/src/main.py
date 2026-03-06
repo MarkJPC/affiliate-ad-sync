@@ -42,9 +42,10 @@ def main() -> int:
         clients.append(AwinClient(config.awin_api_token, config.awin_publisher_id))
         logger.info("Awin client initialized")
 
-    if config.cj_api_token and config.cj_cid and config.cj_website_id:
-        clients.append(CJClient(config.cj_api_token, config.cj_cid, config.cj_website_id))
-        logger.info("CJ client initialized")
+    if config.cj_api_token and config.cj_cid and config.cj_domain_website_ids:
+        for domain, website_id in config.cj_domain_website_ids.items():
+            clients.append(CJClient(config.cj_api_token, config.cj_cid, website_id, domain=domain))
+            logger.info(f"CJ client initialized for {domain}")
 
     if config.impact_account_sid and config.impact_auth_token:
         clients.append(ImpactClient(config.impact_account_sid, config.impact_auth_token))

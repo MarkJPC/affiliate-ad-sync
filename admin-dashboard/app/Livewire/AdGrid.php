@@ -4,6 +4,9 @@ namespace App\Livewire;
 
 use App\Models\Ad;
 use App\Models\Advertiser;
+use App\Models\GeoRegion;
+use App\Models\Placement;
+use App\Services\GeoService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -34,11 +37,20 @@ class AdGrid extends Component
     #[Url(as: 'advertiser_status')]
     public string $advertiserStatus = '';
 
+    #[Url]
+    public string $country = '';
+
+    #[Url]
+    public string $region = '';
+
     #[Url(as: 'has_image')]
     public string $hasImage = '1';
 
     #[Url(as: 'needs_attention')]
     public string $needsAttention = '1';
+
+    #[Url(as: 'placement_sizes')]
+    public string $placementSizesOnly = '1';
 
     #[Url(as: 'sort')]
     public string $sortField = 'last_synced_at';
@@ -87,12 +99,27 @@ class AdGrid extends Component
         $this->resetPage();
     }
 
+    public function updatedCountry(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedRegion(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedHasImage(): void
     {
         $this->resetPage();
     }
 
     public function updatedNeedsAttention(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPlacementSizesOnly(): void
     {
         $this->resetPage();
     }
@@ -118,10 +145,12 @@ class AdGrid extends Component
         $this->reset([
             'search', 'network', 'creativeType', 'approvalStatus',
             'advertiserId', 'dimensions', 'advertiserStatus',
-            'hasImage', 'needsAttention',
+            'country', 'region',
+            'hasImage', 'needsAttention', 'placementSizesOnly',
         ]);
         $this->hasImage = '1';
         $this->needsAttention = '1';
+        $this->placementSizesOnly = '1';
         $this->resetPage();
     }
 
@@ -133,7 +162,16 @@ class AdGrid extends Component
     public function render()
     {
         $user = auth()->user();
-        $query = $this->buildQuery($user);
+
+        // Query active placement sizes for filtering
+        $activeSizes = Placement::where('is_active', true)
+            ->select('width', 'height')
+            ->distinct()
+            ->get()
+            ->map(fn ($p) => [$p->width, $p->height]);
+        $activeSizeStrings = $activeSizes->map(fn ($s) => $s[0] . 'x' . $s[1]);
+
+        $query = $this->buildQuery($user, $activeSizes);
 
         $perPage = in_array($this->perPage, [24, 48, 96]) ? $this->perPage : 24;
         $ads = $query->paginate($perPage);
@@ -171,6 +209,7 @@ class AdGrid extends Component
                 'weight_override' => $ad->weight_override,
                 'advertiser_name' => $ad->advertiser?->name ?? 'Unknown',
                 'advertiser_weight' => $ad->advertiser?->default_weight,
+                'geo_region' => GeoService::getRegionName($ad->advertiser?->country_code),
                 'last_synced_at' => $ad->last_synced_at,
             ]
         ]);
@@ -179,29 +218,50 @@ class AdGrid extends Component
         $this->dispatch('ads-updated', adsJson: $adsJson, pageIds: $pageIds);
 
         // Check if any non-default filters are active
+        // Country codes and geo regions for filter dropdowns
+        $countryList = $this->getCachedCountries();
+        $geoRegions = GeoRegion::orderBy('priority')->get();
+
         $hasActiveFilters = $this->search !== ''
             || $this->network !== ''
             || $this->creativeType !== ''
             || $this->approvalStatus !== ''
             || $this->advertiserId !== ''
             || $this->dimensions !== ''
-            || $this->advertiserStatus !== '';
+            || $this->advertiserStatus !== ''
+            || $this->country !== ''
+            || $this->region !== '';
 
         return view('livewire.ad-grid', compact(
             'ads',
             'dimensionsList',
             'advertisers',
+            'countryList',
+            'geoRegions',
             'needsAttentionCount',
             'totalMatching',
             'adsJson',
             'pageIds',
             'hasActiveFilters',
+            'activeSizeStrings',
         ));
     }
 
-    private function buildQuery($user)
+    private function buildQuery($user, $activeSizes = null)
     {
         $query = Ad::query()->with('advertiser');
+
+        // Base filter: hide ads from advertisers explicitly denied on all sites
+        // (has at least one 'denied' rule AND zero 'allowed' rules)
+        // Advertisers still pending (all 'default') are NOT hidden.
+        if ($this->advertiserStatus !== 'denied_all') {
+            $query->where(function ($q) {
+                // Show ads where advertiser has NO denied rules at all (pending/default)
+                $q->whereDoesntHave('advertiser.siteRules', fn ($sq) => $sq->where('rule', 'denied'))
+                  // OR has at least one allowed rule
+                  ->orWhereHas('advertiser.siteRules', fn ($sq) => $sq->where('rule', 'allowed'));
+            });
+        }
 
         if ($this->search !== '') {
             $search = $this->search;
@@ -234,11 +294,29 @@ class AdGrid extends Component
             }
         }
 
+        // Improved advertiser status filter
         if ($this->advertiserStatus !== '') {
             if ($this->advertiserStatus === 'allowed') {
                 $query->whereHas('advertiser.siteRules', fn ($q) => $q->where('rule', 'allowed'));
-            } elseif ($this->advertiserStatus === 'denied') {
-                $query->whereHas('advertiser.siteRules', fn ($q) => $q->where('rule', 'denied'));
+            } elseif ($this->advertiserStatus === 'pending') {
+                // Advertisers with no 'allowed' or 'denied' rule — only 'default' or no rules at all
+                $query->whereDoesntHave('advertiser.siteRules', fn ($q) => $q->whereIn('rule', ['allowed', 'denied']));
+            } elseif ($this->advertiserStatus === 'denied_all') {
+                // Override base filter: show only advertisers denied on all sites (no allowed rules)
+                $query->whereDoesntHave('advertiser.siteRules', fn ($q) => $q->where('rule', 'allowed'))
+                      ->whereHas('advertiser.siteRules', fn ($q) => $q->where('rule', 'denied'));
+            }
+        }
+
+        if ($this->country !== '') {
+            $query->whereHas('advertiser', fn ($q) => $q->where('country_code', $this->country));
+        }
+
+        if ($this->region !== '') {
+            $regionRow = GeoRegion::where('name', $this->region)->first();
+            if ($regionRow) {
+                $codes = array_map('trim', explode(',', $regionRow->country_codes));
+                $query->whereHas('advertiser', fn ($q) => $q->whereIn('country_code', $codes));
             }
         }
 
@@ -248,6 +326,15 @@ class AdGrid extends Component
 
         if ($this->needsAttention === '1' && $user->last_ad_review_at) {
             $query->where('last_synced_at', '>', $user->last_ad_review_at);
+        }
+
+        // Filter by active placement sizes
+        if ($this->placementSizesOnly === '1' && $activeSizes !== null && $activeSizes->isNotEmpty()) {
+            $query->where(function ($q) use ($activeSizes) {
+                foreach ($activeSizes as [$w, $h]) {
+                    $q->orWhere(fn ($sub) => $sub->where('width', $w)->where('height', $h));
+                }
+            });
         }
 
         $sortable = ['advert_name', 'network', 'width', 'epc', 'approval_status', 'last_synced_at'];
@@ -270,6 +357,17 @@ class AdGrid extends Component
                 ->orderBy('height')
                 ->get()
                 ->map(fn ($d) => $d->width . 'x' . $d->height);
+        });
+    }
+
+    private function getCachedCountries()
+    {
+        return Cache::remember('advertiser_countries', 3600, function () {
+            return Advertiser::whereNotNull('country_code')
+                ->where('country_code', '!=', '')
+                ->distinct()
+                ->orderBy('country_code')
+                ->pluck('country_code');
         });
     }
 

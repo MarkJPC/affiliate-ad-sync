@@ -61,6 +61,26 @@
             </select>
         </div>
 
+        {{-- Country --}}
+        <div class="w-[85px]">
+            <select name="country" id="country" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
+                <option value="">Country</option>
+                @foreach($countries as $cc)
+                    <option value="{{ $cc }}" @selected(request('country') === $cc)>{{ $cc }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Region --}}
+        <div class="w-[100px]">
+            <select name="region" id="region" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
+                <option value="">Region</option>
+                @foreach($geoRegions as $gr)
+                    <option value="{{ $gr->name }}" @selected(request('region') === $gr->name)>{{ $gr->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
         {{-- Status --}}
         <div class="w-[80px]">
             <select name="active" id="active" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
@@ -92,6 +112,13 @@
             </select>
         </div>
 
+        {{-- Duplicates only --}}
+        <label class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-700/50">
+            <input type="checkbox" name="duplicates_only" value="1" @checked(request()->boolean('duplicates_only'))
+                class="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700">
+            <span class="text-gray-600 dark:text-gray-300">Duplicates only</span>
+        </label>
+
         {{-- Preserve sort --}}
         @if(request('sort'))
             <input type="hidden" name="sort" value="{{ request('sort') }}">
@@ -105,7 +132,7 @@
             <button type="submit" class="adv-btn-apply rounded-lg px-4 py-1 text-xs font-semibold text-white shadow-sm transition-all hover:shadow-md">
                 Filter
             </button>
-            @if(request()->hasAny(['search', 'network', 'category', 'weight', 'rule', 'active', 'epc_min', 'epc_max', 'rule_site']))
+            @if(request()->hasAny(['search', 'network', 'category', 'weight', 'rule', 'active', 'epc_min', 'epc_max', 'rule_site', 'duplicates_only', 'country', 'region']))
                 <a href="{{ route('advertisers.index') }}" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-200">
                     Clear
                 </a>

@@ -219,12 +219,13 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
 
     if _use_sqlite:
         sql = f"""INSERT INTO advertisers
-                  (network, network_advertiser_id, name, website_url, category, epc, raw_hash, last_synced_at)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
+                  (network, network_advertiser_id, name, website_url, category, country_code, epc, raw_hash, last_synced_at)
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
                   ON CONFLICT(network, network_advertiser_id) DO UPDATE SET
                       name = excluded.name,
                       website_url = excluded.website_url,
                       category = excluded.category,
+                      country_code = excluded.country_code,
                       epc = excluded.epc,
                       raw_hash = excluded.raw_hash,
                       is_active = 1,
@@ -235,18 +236,20 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
             data["name"],
             data.get("website_url"),
             data.get("category"),
+            data.get("country_code"),
             data.get("epc", 0),
             data["raw_hash"],
         )
         _execute_write(conn, sql, params)
     else:
         sql = f"""INSERT INTO advertisers
-                  (network, network_advertiser_id, name, website_url, category, epc, raw_hash, last_synced_at)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
+                  (network, network_advertiser_id, name, website_url, category, country_code, epc, raw_hash, last_synced_at)
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
                   ON DUPLICATE KEY UPDATE
                       name = VALUES(name),
                       website_url = VALUES(website_url),
                       category = VALUES(category),
+                      country_code = VALUES(country_code),
                       epc = VALUES(epc),
                       raw_hash = VALUES(raw_hash),
                       is_active = TRUE,
@@ -257,6 +260,7 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
             data["name"],
             data.get("website_url"),
             data.get("category"),
+            data.get("country_code"),
             data.get("epc", 0),
             data["raw_hash"],
         )

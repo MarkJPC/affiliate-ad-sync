@@ -4,6 +4,36 @@ import re
 
 from .base import Mapper
 
+# Impact ShippingRegions returns full country names; normalize to ISO codes
+_IMPACT_COUNTRY_MAP = {
+    "UNITEDSTATES": "US",
+    "CANADA": "CA",
+    "AUSTRALIA": "AU",
+    "NEWZEALAND": "NZ",
+    "UNITEDKINGDOM": "GB",
+    "GERMANY": "DE",
+    "FRANCE": "FR",
+    "ITALY": "IT",
+    "SPAIN": "ES",
+    "NETHERLANDS": "NL",
+    "BELGIUM": "BE",
+    "AUSTRIA": "AT",
+    "SWITZERLAND": "CH",
+    "SWEDEN": "SE",
+    "NORWAY": "NO",
+    "DENMARK": "DK",
+    "FINLAND": "FI",
+    "IRELAND": "IE",
+    "PORTUGAL": "PT",
+    "POLAND": "PL",
+    "JAPAN": "JP",
+    "SOUTHKOREA": "KR",
+    "INDIA": "IN",
+    "BRAZIL": "BR",
+    "MEXICO": "MX",
+    "MARSHALLISLANDS": "MH",
+}
+
 
 class ImpactMapper(Mapper):
     """Map Impact API responses to canonical schema."""
@@ -25,6 +55,12 @@ class ImpactMapper(Mapper):
         contract_status = raw.get("ContractStatus", "")
         is_active = contract_status == "Active"
 
+        # Extract country from ShippingRegions (first entry) or default to US
+        # Impact returns full names like "CANADA", "AUSTRALIA" — normalize to ISO codes
+        shipping_regions = raw.get("ShippingRegions") or []
+        raw_country = shipping_regions[0] if shipping_regions else "US"
+        country_code = _IMPACT_COUNTRY_MAP.get(raw_country.upper(), raw_country) if raw_country else "US"
+
         return {
             "network": "impact",
             "network_program_id": str(raw.get("CampaignId", "")),
@@ -32,6 +68,7 @@ class ImpactMapper(Mapper):
             "status": "active" if is_active else "paused",
             "website_url": raw.get("CampaignUrl", ""),
             "category": "",  # Impact doesn't provide category in campaign response
+            "country_code": country_code,
             "epc": 0,
             "raw_hash": Mapper.compute_hash(raw),
         }

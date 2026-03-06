@@ -4,6 +4,7 @@ use App\Http\Controllers\AdController;
 use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GeoRegionController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only
@@ -47,11 +48,18 @@ Route::middleware('auth')->group(function () {
     Route::put('/sites/{site}/placements/{placement}', fn () => abort(501, 'Coming soon'))->name('sites.placements.update');
     Route::delete('/sites/{site}/placements/{placement}', fn () => abort(501, 'Coming soon'))->name('sites.placements.destroy');
 
+    // Geo Regions CRUD
+    Route::get('/geo-regions', [GeoRegionController::class, 'index'])->name('geo-regions.index');
+    Route::post('/geo-regions', [GeoRegionController::class, 'store'])->name('geo-regions.store');
+    Route::put('/geo-regions/{geoRegion}', [GeoRegionController::class, 'update'])->name('geo-regions.update');
+    Route::delete('/geo-regions/{geoRegion}', [GeoRegionController::class, 'destroy'])->name('geo-regions.destroy');
+
     // Phase 3 — Sync Logs
     Route::get('/sync-logs', fn () => abort(501, 'Coming soon'))->name('sync-logs.index');
 
     // AJAX endpoints (return JSON) — Phase 2
     Route::prefix('api')->group(function () {
+        Route::patch('/advertisers/{advertiser}/country-code', [AdvertiserController::class, 'updateCountryCode'])->name('api.advertisers.country-code.update');
         Route::patch('/advertisers/{advertiser}/rules/{site}', [AdvertiserController::class, 'updateRule'])->name('api.advertisers.rules.update');
         Route::patch('/advertisers/{advertiser}/weight', [AdvertiserController::class, 'updateWeight'])->name('api.advertisers.weight.update');
         Route::post('/advertisers/bulk-rules', [AdvertiserController::class, 'bulkRules'])->name('api.advertisers.bulk-rules');

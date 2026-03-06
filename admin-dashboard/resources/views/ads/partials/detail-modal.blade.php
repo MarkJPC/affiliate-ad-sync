@@ -96,6 +96,10 @@
                 <span class="font-mono text-xs text-gray-900 dark:text-white" x-text="(detailAd?.width && detailAd?.height) ? detailAd.width + ' x ' + detailAd.height : 'N/A'"></span>
             </div>
             <div class="flex items-center justify-between py-2.5">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Geo Region</span>
+                <span class="text-xs text-gray-900 dark:text-white" x-text="detailAd?.geo_region || '(none)'"></span>
+            </div>
+            <div class="flex items-center justify-between py-2.5">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Status</span>
                 <span class="text-xs capitalize" :class="ads[detailAd?.id]?.approval_status === 'denied' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'"
                     x-text="ads[detailAd?.id]?.approval_status"></span>

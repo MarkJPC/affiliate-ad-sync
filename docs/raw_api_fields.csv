@@ -1,0 +1,235 @@
+Network,Endpoint,Field Name,Sample Value,Currently Used
+FlexOffers,Advertisers,actions,None,
+FlexOffers,Advertisers,actions[].action,Base,
+FlexOffers,Advertisers,actions[].actionType,Sale,
+FlexOffers,Advertisers,actions[].commission,8.00%,
+FlexOffers,Advertisers,actions[].commissionType,Percentage,
+FlexOffers,Advertisers,actions[].description,"Disney gift cards, all other gift cards&#x0D;
+when Product Category is on the list 2023 Consumables:&#x0D;
+[legato][OFFL...",
+FlexOffers,Advertisers,actions[].descriptionCharsCount,0,
+FlexOffers,Advertisers,actions[].endDate,None,
+FlexOffers,Advertisers,actions[].programAction,None,
+FlexOffers,Advertisers,actions[].programID,0,
+FlexOffers,Advertisers,actions[].startDate,2024-09-12T07:19:15.0000000,
+FlexOffers,Advertisers,allowsDeeplinking,True,
+FlexOffers,Advertisers,applicationStatus,Approved,Y
+FlexOffers,Advertisers,applicationStatusDate,2026-02-16 22:01:24,
+FlexOffers,Advertisers,applicationStatusId,1,
+FlexOffers,Advertisers,categoryIds,58,
+FlexOffers,Advertisers,categoryNames,Food and Drink,Y
+FlexOffers,Advertisers,country,US,
+FlexOffers,Advertisers,created,2008-10-24 10:24:03,
+FlexOffers,Advertisers,deeplinkURL,https://track.flexlinkspro.com/g.ashx?foid=1.147&trid=1399155.185&foc=17&fot=9999&fos=1,
+FlexOffers,Advertisers,defaultUrl,,
+FlexOffers,Advertisers,description,Omaha Steaks is world-famous for its premium steaks and other gourmet foods. Products are custom-cut and packaged to ser...,
+FlexOffers,Advertisers,domainUrl,https://omahasteaks.com,Y
+FlexOffers,Advertisers,flexLinks,True,
+FlexOffers,Advertisers,id,185,Y
+FlexOffers,Advertisers,imageUrl,https://content.flexlinks.com/sharedimages/programsquarelogo/185.png,
+FlexOffers,Advertisers,lastCommissionUpdated,2025-03-24 14:19:07,
+FlexOffers,Advertisers,lastStatusUpdated,2025-03-24 14:19:07,
+FlexOffers,Advertisers,name,"OmahaSteaks.com, Inc.",Y
+FlexOffers,Advertisers,networkRank,3.00,
+FlexOffers,Advertisers,payout,The payout is 8% of sales.,
+FlexOffers,Advertisers,productAdvertiser,True,
+FlexOffers,Advertisers,programStatus,Approved,Y
+FlexOffers,Advertisers,promotionalAdvertiser,True,
+FlexOffers,Advertisers,sevenDayEpc,0.37,Y
+FlexOffers,Advertisers,thirtyDayEpc,1.30,
+FlexOffers,Advertisers,threeMonthEpc,0.65,
+FlexOffers,Ads,advertiserId,185,
+FlexOffers,Ads,advertiserName,"OmahaSteaks.com, Inc.",
+FlexOffers,Ads,allowsDeeplinking,True,
+FlexOffers,Ads,bannerHeight,None,Y
+FlexOffers,Ads,bannerWidth,None,Y
+FlexOffers,Ads,categories,Food and Drink,
+FlexOffers,Ads,couponCode,None,
+FlexOffers,Ads,couponRestrictions,None,
+FlexOffers,Ads,dollarOff,0,
+FlexOffers,Ads,endDate,2030-02-28,
+FlexOffers,Ads,epc3M,None,
+FlexOffers,Ads,epc7D,None,Y
+FlexOffers,Ads,htmlCode,"<a href=""https://track.flexlinkspro.com/g.ashx?foid=1.147.188823010002933&trid=1399155.185&foc=11&fot=9999&fos=6"">Subscr...",Y
+FlexOffers,Ads,imageUrl,None,Y
+FlexOffers,Ads,linkDescription,Subscribe to Omaha Steaks today and get an extra 10% off your order. Cancel Anytime!,
+FlexOffers,Ads,linkId,1.147.188823010002933,Y
+FlexOffers,Ads,linkName,Subscribe to Omaha Steaks today and get an extra 10% off your order. Cancel Anytime!,Y
+FlexOffers,Ads,linkType,Text Link,Y
+FlexOffers,Ads,linkUrl,https://track.flexlinkspro.com/g.ashx?foid=1.147.188823010002933&trid=1399155.185&foc=11&fot=9999&fos=6,Y
+FlexOffers,Ads,logoURL,https://content.flexlinks.com/sharedimages/programs/1563.jpg,
+FlexOffers,Ads,percentageOff,10,
+FlexOffers,Ads,promotionalTypes,Percentage off,
+FlexOffers,Ads,startDate,2024-03-01,
+Awin,Advertisers,clickThroughUrl,https://www.awin1.com/awclick.php?mid=4032&id=1638097,
+Awin,Advertisers,currencyCode,USD,
+Awin,Advertisers,description,Welcome to the Awin affiliate program. This program exists for administrative purposes alongside the Awin Referral Schem...,
+Awin,Advertisers,displayUrl,http://www.affiliatewindow.com,Y
+Awin,Advertisers,id,4032,Y
+Awin,Advertisers,linkStatus,online,Y
+Awin,Advertisers,logoUrl,https://ui.awin.com/images/upload/merchant/profile/4032.png,
+Awin,Advertisers,name,Awin (USD),Y
+Awin,Advertisers,primaryRegion.countryCode,US,
+Awin,Advertisers,primaryRegion.name,United States of America,
+Awin,Advertisers,primarySector,None,Y
+Awin,Advertisers,status,Active,Y
+Awin,Advertisers,validDomains,[],
+Awin,Advertisers,validDomains[].domain,oedro.com,
+Awin,Promotions,advertiser.id,28349,
+Awin,Promotions,advertiser.joined,True,
+Awin,Promotions,advertiser.name,Oedro (US),
+Awin,Promotions,campaign,,
+Awin,Promotions,categories,[],
+Awin,Promotions,dateAdded,2026-02-26T06:44:20+00:00,
+Awin,Promotions,description,OEDRO 2026 Automotive Spring Purchasing Specials $50 OFF Code,Y
+Awin,Promotions,endDate,2026-04-01T05:44:00+00:00,
+Awin,Promotions,promotionId,3754132,Y
+Awin,Promotions,regions.all,True,
+Awin,Promotions,startDate,2026-02-26T06:44:00+00:00,
+Awin,Promotions,status,active,Y
+Awin,Promotions,terms,OEDRO 2026 Automotive Spring Purchasing Specials $50 OFF Code,Y
+Awin,Promotions,title,OEDRO 2026 Automotive Spring Purchasing Specials $50 OFF Code,Y
+Awin,Promotions,type,voucher,Y
+Awin,Promotions,url,https://www.oedro.com/custompro/50-off-discount-c-491.html,Y
+Awin,Promotions,urlTracking,https://www.awin1.com/cread.php?awinmid=28349&awinaffid=1638097&ued=https%3A%2F%2Fwww.oedro.com%2Fcustompro%2F50-off-dis...,Y
+Awin,Promotions,voucher.attributable,False,
+Awin,Promotions,voucher.code,HAMP50,
+Awin,Promotions,voucher.exclusive,False,
+CJ,Advertisers,account-status,Active,Y
+CJ,Advertisers,actions,[''],
+CJ,Advertisers,advertiser-id,1463221,Y
+CJ,Advertisers,advertiser-name,The Tire Rack,Y
+CJ,Advertisers,cookieless-tracking-enabled,true,
+CJ,Advertisers,language,en,
+CJ,Advertisers,link-types,"['Text Link', 'Banner', 'Advanced Link', 'Flash Link', 'EvergreenLink', 'OtherDeepLink', 'DeepLink', 'Test Link', 'AutoM...",
+CJ,Advertisers,mobile-tracking-certified,true,
+CJ,Advertisers,network-rank,5,
+CJ,Advertisers,performance-incentives,false,
+CJ,Advertisers,primary-category/child,Parts & Accessories,Y
+CJ,Advertisers,primary-category/parent,Automotive,
+CJ,Advertisers,program-url,http://www.tirerack.com,Y
+CJ,Advertisers,relationship-status,joined,
+CJ,Advertisers,seven-day-epc,186.62,Y
+CJ,Advertisers,three-month-epc,235.59,
+CJ,Ads,ad-content,<link>Shop for Hawk Performance brake pads at Tire Rack.</link>,
+CJ,Ads,advertiser-id,1463221,
+CJ,Ads,advertiser-name,The Tire Rack,
+CJ,Ads,allow-deep-linking,false,
+CJ,Ads,category,Parts & Accessories,
+CJ,Ads,click-commission,0.0,
+CJ,Ads,clickUrl,https://www.dpbolvw.net/click-101604347-11582948-1772341200000,Y
+CJ,Ads,coupon-code,,
+CJ,Ads,creative-height,600,Y
+CJ,Ads,creative-width,160,Y
+CJ,Ads,cross-device-only,false,
+CJ,Ads,description,Clearance pricing of up to 60% off on a great selection of brake products. From OE replacement brake parts to performanc...,
+CJ,Ads,destination,http://www.tirerack.com/a.jsp?url=/specialoffers/details.jsp&promoID=T616,Y
+CJ,Ads,event-name,null,
+CJ,Ads,language,English,
+CJ,Ads,last-updated,Sat Feb 28 21:00:00 PST 2026,
+CJ,Ads,lead-commission,,
+CJ,Ads,link-code-html,"<a href=""https://www.dpbolvw.net/click-101604347-11582948-1772341200000"">
+<img src=""https://www.tqlkg.com/image-10160434...",Y
+CJ,Ads,link-code-javascript,"<form name=""CJ11582948X1"" method=""POST"" style=""margin:0px;display:inline"" action=""https://www.tkqlhce.com/click"">
+<input...",
+CJ,Ads,link-id,11582948,Y
+CJ,Ads,link-name,160x600 Brake Clearance Promotion,Y
+CJ,Ads,link-type,Banner,Y
+CJ,Ads,mobile-app-download,false,
+CJ,Ads,mobile-optimized,false,
+CJ,Ads,performance-incentive,false,
+CJ,Ads,promotion-end-date,2026-04-30 08:59:00.0,
+CJ,Ads,promotion-start-date,2026-02-28 21:00:00.0,
+CJ,Ads,promotion-type,Sale/Discount,
+CJ,Ads,relationship-status,joined,
+CJ,Ads,sale-commission,6.00%,
+CJ,Ads,seven-day-epc,N/A,Y
+CJ,Ads,targeted-countries,null,
+CJ,Ads,three-month-epc,N/A,
+Impact,Advertisers,AdvertiserId,28763,
+Impact,Advertisers,AdvertiserName,Adorama,
+Impact,Advertisers,AdvertiserUrl,http://www.adorama.com,
+Impact,Advertisers,AllowsDeeplinking,true,
+Impact,Advertisers,CampaignDescription,"We offer easy and professional shopping for all your backpacking, camping, hiking, and climbing needs. You can choose fr...",
+Impact,Advertisers,CampaignId,11630,Y
+Impact,Advertisers,CampaignLogoUri,/Mediapartners/IR4LVYTKudb54545284CmP8mNMUziEfZv1/Campaigns/11630/Logo,
+Impact,Advertisers,CampaignName,SunnySports,Y
+Impact,Advertisers,CampaignUrl,http://sunnysports.com,Y
+Impact,Advertisers,ContractStatus,Expired,Y
+Impact,Advertisers,ContractUri,/Mediapartners/IR4LVYTKudb54545284CmP8mNMUziEfZv1/Campaigns/11630/Contracts/Active?summary=false,
+Impact,Advertisers,DeeplinkDomains,"['sunnysports.com', '*.sunnysports.com']",
+Impact,Advertisers,HasStandDownPolicy,true,
+Impact,Advertisers,PublicTermsUri,/Mediapartners/IR4LVYTKudb54545284CmP8mNMUziEfZv1/Campaigns/11630/PublicTerms,
+Impact,Advertisers,ShippingRegions,['US'],
+Impact,Advertisers,TrackingLink,https://wineexpress.vneoga.net/c/4545284/88200/2181,
+Impact,Advertisers,Uri,/Mediapartners/IR4LVYTKudb54545284CmP8mNMUziEfZv1/Campaigns/11630,
+Impact,Ads,AdvertiserId,372572,
+Impact,Ads,AdvertiserName,Backcountry,
+Impact,Ads,AllowDeepLinking,true,
+Impact,Ads,BogoBuyImageUrl,,
+Impact,Ads,BogoBuyName,,
+Impact,Ads,BogoBuyQuantity,0,
+Impact,Ads,BogoBuyScope,,
+Impact,Ads,BogoGetDiscountAmount,,
+Impact,Ads,BogoGetDiscountCurrency,,
+Impact,Ads,BogoGetDiscountPercent,,
+Impact,Ads,BogoGetDiscountType,,
+Impact,Ads,BogoGetImageUrl,,
+Impact,Ads,BogoGetName,,
+Impact,Ads,BogoGetQuantity,0,
+Impact,Ads,BogoGetScope,,
+Impact,Ads,CampaignId,5311,Y
+Impact,Ads,CampaignName,Backcountry.com,
+Impact,Ads,Code,"<a rel=""sponsored""
+           href=""https://backcountry.tnu8.net/c/4545284/401987/5311"" target=""_top"" id=""401987"">
+<img ...",Y
+Impact,Ads,CreativeUrl,//a.impactradius-go.com/display-ad/5311-401987,Y
+Impact,Ads,DealCategories,,
+Impact,Ads,DealDateCreated,2022-04-15T04:37:40-04:00,
+Impact,Ads,DealDateLastUpdated,2025-12-10T19:15:41-05:00,
+Impact,Ads,DealDefaultPromoCode,wativ10,
+Impact,Ads,DealDescription,10% off sitewide coupon,
+Impact,Ads,DealEndDate,,
+Impact,Ads,DealId,130505,
+Impact,Ads,DealName,10% off sitewide coupon,
+Impact,Ads,DealProducts,[],
+Impact,Ads,DealPublic,false,
+Impact,Ads,DealScope,ENTIRE_STORE,
+Impact,Ads,DealStartDate,,
+Impact,Ads,DealState,ACTIVE,
+Impact,Ads,DealType,GENERAL_SALE,
+Impact,Ads,Description,New Customer Offer - Take 15% Off Your First Order at Backcountry.com! Exclusions Apply.,
+Impact,Ads,DiscountAmount,,
+Impact,Ads,DiscountCurrency,,
+Impact,Ads,DiscountMaximumPercent,,
+Impact,Ads,DiscountPercent,10,
+Impact,Ads,DiscountPercentRangeEnd,,
+Impact,Ads,DiscountPercentRangeStart,,
+Impact,Ads,DiscountType,PERCENT,
+Impact,Ads,EndDate,,
+Impact,Ads,FromAddresses,,
+Impact,Ads,Gift,,
+Impact,Ads,Height,31,Y
+Impact,Ads,IFrameCode,"<iframe id=""iframe_261"" src=""//a.impactradius-go.com/gen-ad-code/4545284/401987/5311/"" width=""88"" height=""31"" scrolling=...",
+Impact,Ads,Id,401987,Y
+Impact,Ads,Labels,Logo,
+Impact,Ads,LandingPageUrl,https://www.backcountry.com,Y
+Impact,Ads,Language,ENGLISH,
+Impact,Ads,MaximumSavingsAmount,,
+Impact,Ads,MaximumSavingsCurrency,,
+Impact,Ads,MinimumPurchaseAmount,,
+Impact,Ads,MinimumPurchaseAmountCurrency,,
+Impact,Ads,MobileReady,true,
+Impact,Ads,Name,Backcountry Logo 88x31,Y
+Impact,Ads,PurchaseLimitQuantity,0,
+Impact,Ads,RebateAmount,,
+Impact,Ads,RebateCurrency,,
+Impact,Ads,Season,,
+Impact,Ads,StartDate,2024-01-04T17:53:15-05:00,
+Impact,Ads,SubjectLines,,
+Impact,Ads,TopSeller,false,
+Impact,Ads,TrackingLink,https://backcountry.tnu8.net/c/4545284/401987/5311,Y
+Impact,Ads,Type,BANNER,Y
+Impact,Ads,UnsubscribeLink,,
+Impact,Ads,Uri,/Mediapartners/IR4LVYTKudb54545284CmP8mNMUziEfZv1/Ads/401987,
+Impact,Ads,Width,88,Y

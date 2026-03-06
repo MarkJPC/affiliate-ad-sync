@@ -56,6 +56,7 @@ class NetworkClient(ABC):
             Dict with sync statistics.
         """
         from .. import db
+        from ..geo import resolve_geo_countries
         from ..mappers import get_mapper
 
         mapper = get_mapper(self.network_name)
@@ -94,12 +95,16 @@ class NetworkClient(ABC):
                         "name": adv_data["network_program_name"],
                         "website_url": adv_data.get("website_url"),
                         "category": adv_data.get("category"),
+                        "country_code": adv_data.get("country_code"),
                         "epc": adv_data.get("epc", 0),
                         "raw_hash": adv_data["raw_hash"],
                     }
 
                     advertiser_id, _ = db.upsert_advertiser(conn, db_adv)
                     stats["advertisers_synced"] += 1
+
+                    # Resolve geo_countries for this advertiser's ads
+                    geo_countries = resolve_geo_countries(conn, adv_data.get("country_code"))
 
                     # Create site_advertiser_rules for applicable sites
                     for sid in rule_site_ids:
@@ -159,7 +164,7 @@ class NetworkClient(ABC):
                                 "state_required": ad_data.get("state_required", "N"),
                                 "geo_cities": ad_data.get("geo_cities", "a:0:{}"),
                                 "geo_states": ad_data.get("geo_states", "a:0:{}"),
-                                "geo_countries": ad_data.get("geo_countries", "a:0:{}"),
+                                "geo_countries": geo_countries,
                                 "schedule_start": ad_data.get("schedule_start", 0),
                                 "schedule_end": ad_data.get("schedule_end", 2650941780),
                             }

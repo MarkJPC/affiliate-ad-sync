@@ -20,6 +20,7 @@ class Advertiser extends Model
         'epc',
         'commission_rate',
         'default_weight',
+        'country_code',
         'is_active',
         'last_synced_at',
         'raw_hash',

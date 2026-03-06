@@ -88,6 +88,14 @@
                 <span class="font-mono text-xs text-gray-900 dark:text-white" x-text="detailData.commission_rate"></span>
             </div>
             <div class="flex items-center justify-between py-2.5">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Country</span>
+                <span class="font-mono text-xs text-gray-900 dark:text-white" x-text="detailData.country_code || '---'"></span>
+            </div>
+            <div class="flex items-center justify-between py-2.5">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Geo Region</span>
+                <span class="text-xs text-gray-900 dark:text-white" x-text="detailData.region_name || '(none)'"></span>
+            </div>
+            <div class="flex items-center justify-between py-2.5">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Last synced</span>
                 <span class="font-mono text-[0.7rem] text-gray-500 dark:text-gray-400" x-text="detailData.last_synced_at"></span>
             </div>

@@ -23,17 +23,19 @@ class CJClient(NetworkClient):
     ADVERTISER_URL = "https://advertiser-lookup.api.cj.com/v2/advertiser-lookup"
     LINK_SEARCH_URL = "https://link-search.api.cj.com/v2/link-search"
 
-    def __init__(self, api_token: str, cid: str, website_id: str):
+    def __init__(self, api_token: str, cid: str, website_id: str, domain: str | None = None):
         """Initialize the CJ client.
 
         Args:
             api_token: CJ personal access token (Bearer token).
             cid: Publisher Company ID (CID) for advertiser lookup.
             website_id: Website/Property ID (PID) for link search.
+            domain: Optional domain this client is scoped to.
         """
         self.api_token = api_token
         self.cid = cid
         self.website_id = website_id
+        self.domain = domain
         self._client = httpx.Client(timeout=30.0)
 
     @property

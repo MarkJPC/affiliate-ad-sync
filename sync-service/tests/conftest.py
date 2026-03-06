@@ -64,15 +64,18 @@ def awin_client():
 def cj_client():
     """Provide CJClient with configured credentials.
 
-    Skips test if CJ_API_TOKEN, CJ_CID, or CJ_WEBSITE_ID is not set.
+    Skips test if CJ_API_TOKEN, CJ_CID, or CJ_DOMAIN_WEBSITE_IDS is not set.
+    Uses the first domain's website ID for testing.
     """
     from src.networks.cj import CJClient
 
     config = load_config()
-    if not config.cj_api_token or not config.cj_cid or not config.cj_website_id:
-        pytest.skip("CJ_API_TOKEN, CJ_CID, or CJ_WEBSITE_ID not configured")
+    if not config.cj_api_token or not config.cj_cid or not config.cj_domain_website_ids:
+        pytest.skip("CJ_API_TOKEN, CJ_CID, or CJ_DOMAIN_WEBSITE_IDS not configured")
 
-    client = CJClient(config.cj_api_token, config.cj_cid, config.cj_website_id)
+    first_domain = next(iter(config.cj_domain_website_ids))
+    first_wid = config.cj_domain_website_ids[first_domain]
+    client = CJClient(config.cj_api_token, config.cj_cid, first_wid, domain=first_domain)
     yield client
     client.close()
 

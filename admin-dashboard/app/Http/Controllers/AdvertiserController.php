@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Advertiser;
+use App\Models\GeoRegion;
 use App\Models\Site;
 use App\Models\SiteAdvertiserRule;
+use App\Services\GeoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -70,6 +72,30 @@ class AdvertiserController extends Controller
             }
         }
 
+        // Duplicates only filter
+        if ($request->boolean('duplicates_only')) {
+            $duplicateNamesList = Advertiser::select('name')
+                ->selectRaw('COUNT(DISTINCT network) as net_count')
+                ->groupBy('name')
+                ->havingRaw('COUNT(DISTINCT network) > 1')
+                ->pluck('name');
+            $query->whereIn('name', $duplicateNamesList);
+        }
+
+        // Country filter
+        if ($country = $request->input('country')) {
+            $query->where('country_code', $country);
+        }
+
+        // Region filter
+        if ($region = $request->input('region')) {
+            $regionRow = GeoRegion::where('name', $region)->first();
+            if ($regionRow) {
+                $codes = array_map('trim', explode(',', $regionRow->country_codes));
+                $query->whereIn('country_code', $codes);
+            }
+        }
+
         // Sorting
         $sortable = ['name', 'network', 'epc', 'commission_rate', 'default_weight', 'last_synced_at'];
         $sort = in_array($request->input('sort'), $sortable) ? $request->input('sort') : 'name';
@@ -89,12 +115,27 @@ class AdvertiserController extends Controller
             $advertiser->rulesBySite = $advertiser->siteRules->keyBy('site_id');
         });
 
+        // Compute region name per advertiser
+        $advertisers->getCollection()->each(function ($advertiser) {
+            $advertiser->region_name = GeoService::getRegionName($advertiser->country_code);
+        });
+
         // Distinct categories for filter dropdown
         $categories = Advertiser::whereNotNull('category')
             ->where('category', '!=', '')
             ->distinct()
             ->orderBy('category')
             ->pluck('category');
+
+        // Distinct country codes for filter dropdown
+        $countries = Advertiser::whereNotNull('country_code')
+            ->where('country_code', '!=', '')
+            ->distinct()
+            ->orderBy('country_code')
+            ->pluck('country_code');
+
+        // Geo regions for filter dropdown
+        $geoRegions = GeoRegion::orderBy('priority')->get();
 
         // Total matching count (for "select all matching" in bulk)
         $totalMatching = $advertisers->total();
@@ -103,6 +144,8 @@ class AdvertiserController extends Controller
             'advertisers',
             'sites',
             'categories',
+            'countries',
+            'geoRegions',
             'duplicateNames',
             'totalMatching',
             'sort',
@@ -137,6 +180,26 @@ class AdvertiserController extends Controller
         ]);
 
         return response()->json(['success' => true, 'weight' => $advertiser->default_weight]);
+    }
+
+    public function updateCountryCode(Request $request, Advertiser $advertiser)
+    {
+        $validated = $request->validate([
+            'country_code' => 'nullable|string|size:2|alpha',
+        ]);
+
+        $code = $validated['country_code'] ? strtoupper($validated['country_code']) : null;
+        $advertiser->update(['country_code' => $code]);
+
+        $updatedAds = GeoService::reResolveAdvertiserAds($advertiser);
+        $regionName = GeoService::getRegionName($code);
+
+        return response()->json([
+            'success' => true,
+            'country_code' => $code,
+            'region_name' => $regionName,
+            'ads_updated' => $updatedAds,
+        ]);
     }
 
     public function bulkRules(Request $request)

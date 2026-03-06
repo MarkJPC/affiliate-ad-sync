@@ -38,6 +38,14 @@
                 </a>
             </li>
 
+            <li>
+                <a href="{{ route('geo-regions.index') }}"
+                    class="flex items-center rounded-lg p-2 {{ request()->routeIs('geo-regions.*') ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700' }}">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span class="ml-3">Geo Regions</span>
+                </a>
+            </li>
+
             <li class="!mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
                 <a href="{{ route('sites.index') }}"
                     class="flex items-center rounded-lg p-2 {{ request()->routeIs('sites.*') || request()->routeIs('sites.placements.*') ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700' }}">

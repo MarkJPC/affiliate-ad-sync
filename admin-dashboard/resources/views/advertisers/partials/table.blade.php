@@ -39,6 +39,8 @@
                         Commission {!! $sortIcon('commission_rate') !!}
                     </a>
                 </th>
+                <th class="px-2 py-1.5">Country</th>
+                <th class="px-2 py-1.5">Region</th>
                 <th class="px-2 py-1.5">
                     <a href="{{ $sortUrl('default_weight') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         Weight {!! $sortIcon('default_weight') !!}
@@ -66,7 +68,7 @@
                         $lastDuplicateGroup = $lowerName;
                     @endphp
                     <tr class="border-b bg-amber-50 dark:border-gray-700 dark:bg-amber-900/20">
-                        <td colspan="{{ 6 + $sites->count() }}" class="px-2 py-1">
+                        <td colspan="{{ 8 + $sites->count() }}" class="px-2 py-1">
                             <span class="text-xs font-semibold text-amber-700 dark:text-amber-400">
                                 Duplicate: {{ $advertiser->name }} ({{ $groupCount }} networks)
                             </span>

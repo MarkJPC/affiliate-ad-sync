@@ -2,6 +2,7 @@
 
 import re
 
+from ..geo import infer_country_from_url
 from .base import Mapper
 
 
@@ -45,13 +46,16 @@ class CJMapper(Mapper):
         account_status = raw.get("account-status", "")
         is_active = account_status.lower() == "active"
 
+        program_url = raw.get("program-url", "")
+
         return {
             "network": "cj",
             "network_program_id": str(raw.get("advertiser-id", "")),
             "network_program_name": raw.get("advertiser-name", ""),
             "status": "active" if is_active else "paused",
-            "website_url": raw.get("program-url", ""),
+            "website_url": program_url,
             "category": raw.get("primary-category/child", ""),
+            "country_code": infer_country_from_url(program_url),
             "epc": self._parse_epc(raw.get("seven-day-epc", "")),
             "raw_hash": Mapper.compute_hash(raw),
         }

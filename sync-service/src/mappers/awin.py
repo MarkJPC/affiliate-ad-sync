@@ -29,6 +29,10 @@ class AwinMapper(Mapper):
         status_raw = str(raw.get("status") or raw.get("linkStatus") or raw.get("relationship") or "").lower()
         status = "active" if status_raw in {"joined", "active", "approved"} else "paused"
 
+        # Extract country code from primaryRegion nested object
+        primary_region = raw.get("primaryRegion") or {}
+        country_code = primary_region.get("countryCode", "US") if isinstance(primary_region, dict) else "US"
+
         return {
             "network": "awin",
             "network_program_id": str(raw.get("id", "")),
@@ -37,6 +41,7 @@ class AwinMapper(Mapper):
             # Best-effort fields (safe defaults if missing)
             "website_url": raw.get("displayUrl") or raw.get("programmeUrl") or raw.get("url") or "",
             "category": raw.get("primarySector") or raw.get("sector") or "",
+            "country_code": country_code,
             # EPC usually not present in programmes response; keep consistent type
             "epc": float(raw.get("epc") or raw.get("sevenDayEpc") or 0),
             "raw_hash": Mapper.compute_hash(raw),

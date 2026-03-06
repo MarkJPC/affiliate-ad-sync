@@ -33,6 +33,7 @@ class FlexOffersMapper(Mapper):
             "status": "active" if is_active else "paused",
             "website_url": raw.get("domainUrl", ""),
             "category": raw.get("categoryNames", ""),
+            "country_code": "GB" if raw.get("country") == "UK" else raw.get("country", "US"),
             "epc": float(raw.get("sevenDayEpc") or 0),
             "raw_hash": Mapper.compute_hash(raw),
         }

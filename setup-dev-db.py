@@ -76,6 +76,7 @@ def verify_database() -> bool:
         expected_tables = [
             "advertisers",
             "ads",
+            "geo_regions",
             "sites",
             "placements",
             "site_advertiser_rules",

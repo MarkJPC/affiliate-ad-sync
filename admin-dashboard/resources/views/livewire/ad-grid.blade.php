@@ -115,21 +115,42 @@
             </div>
 
             {{-- Dimensions --}}
-            <div class="w-[110px]">
+            <div class="w-[130px]">
                 <select wire:model.live="dimensions" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
                     <option value="">Dimensions</option>
                     @foreach($dimensionsList as $dim)
-                        <option value="{{ $dim }}">{{ $dim }}</option>
+                        <option value="{{ $dim }}">{{ $dim }}{{ $activeSizeStrings->contains($dim) ? ' (active)' : '' }}</option>
                     @endforeach
                 </select>
             </div>
 
             {{-- Advertiser Status --}}
-            <div class="w-[115px]">
+            <div class="w-[130px]">
                 <select wire:model.live="advertiserStatus" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
                     <option value="">Adv. Status</option>
-                    <option value="allowed">Allowed</option>
-                    <option value="denied">Denied</option>
+                    <option value="allowed">Approved on any site</option>
+                    <option value="pending">Pending only</option>
+                    <option value="denied_all">Denied on all sites</option>
+                </select>
+            </div>
+
+            {{-- Country --}}
+            <div class="w-[85px]">
+                <select wire:model.live="country" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
+                    <option value="">Country</option>
+                    @foreach($countryList as $cc)
+                        <option value="{{ $cc }}">{{ $cc }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Region --}}
+            <div class="w-[100px]">
+                <select wire:model.live="region" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
+                    <option value="">Region</option>
+                    @foreach($geoRegions as $gr)
+                        <option value="{{ $gr->name }}">{{ $gr->name }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -184,6 +205,15 @@
                 @endif
             </label>
 
+            {{-- Active Placement Sizes toggle --}}
+            <label class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-700/50">
+                <input type="checkbox" value="1"
+                    x-on:change="$wire.set('placementSizesOnly', $event.target.checked ? '1' : '0')"
+                    :checked="$wire.placementSizesOnly === '1'"
+                    class="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700">
+                <span class="text-gray-600 dark:text-gray-300">Active sizes only</span>
+            </label>
+
             {{-- Per page --}}
             <div class="w-[55px]">
                 <select wire:model.live="perPage" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
@@ -203,7 +233,7 @@
     </div>
 
     {{-- Active filter pills --}}
-    @if($hasActiveFilters || $this->hasImage !== '1' || $this->needsAttention !== '1')
+    @if($hasActiveFilters || $this->hasImage !== '1' || $this->needsAttention !== '1' || $this->placementSizesOnly !== '1')
     <div class="flex flex-wrap gap-1.5 mb-2" wire:key="active-filters">
         @if($this->search !== '')
             <span class="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-0.5 text-[0.65rem] font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
@@ -247,6 +277,18 @@
                 <button wire:click="$set('advertiserStatus', '')" class="ml-0.5 hover:text-cyan-900 dark:hover:text-white">&times;</button>
             </span>
         @endif
+        @if($this->country !== '')
+            <span class="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-0.5 text-[0.65rem] font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                Country: {{ $this->country }}
+                <button wire:click="$set('country', '')" class="ml-0.5 hover:text-cyan-900 dark:hover:text-white">&times;</button>
+            </span>
+        @endif
+        @if($this->region !== '')
+            <span class="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-0.5 text-[0.65rem] font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                Region: {{ $this->region }}
+                <button wire:click="$set('region', '')" class="ml-0.5 hover:text-cyan-900 dark:hover:text-white">&times;</button>
+            </span>
+        @endif
         @if($this->hasImage !== '1')
             <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[0.65rem] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 All (incl. no image)
@@ -257,6 +299,12 @@
             <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[0.65rem] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 All (incl. reviewed)
                 <button wire:click="$set('needsAttention', '1')" class="ml-0.5 hover:text-gray-900 dark:hover:text-white">&times;</button>
+            </span>
+        @endif
+        @if($this->placementSizesOnly !== '1')
+            <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[0.65rem] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                All sizes (incl. inactive)
+                <button wire:click="$set('placementSizesOnly', '1')" class="ml-0.5 hover:text-gray-900 dark:hover:text-white">&times;</button>
             </span>
         @endif
     </div>

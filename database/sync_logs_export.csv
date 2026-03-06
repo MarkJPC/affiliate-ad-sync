@@ -1,0 +1,16 @@
+id,network,site_domain,started_at,completed_at,status,advertisers_synced,ads_synced,ads_deleted,error_message
+1,flexoffers,www.rvtravellife.com,2026-02-18 22:51:11,2026-02-18 22:51:59,success,223,2226,0,
+2,flexoffers,thisoldcampsite.com,2026-02-18 22:51:59,2026-02-18 22:53:00,success,221,2533,0,
+3,impact,,2026-02-18 22:53:00,2026-02-18 22:53:40,success,67,3274,0,
+4,flexoffers,www.rvtravellife.com,2026-02-19 18:34:44,2026-02-19 18:35:27,success,223,2621,0,
+5,flexoffers,thisoldcampsite.com,2026-02-19 18:35:27,2026-02-19 18:37:38,success,221,4608,4,
+6,impact,,2026-02-19 18:37:38,2026-02-19 18:38:22,success,67,3274,0,
+7,flexoffers,www.rvtravellife.com,2026-02-24 01:48:11,2026-02-24 01:50:17,success,223,6364,10,
+8,flexoffers,thisoldcampsite.com,2026-02-24 01:50:17,2026-02-24 01:53:54,success,221,6427,68,
+9,cj,,2026-02-24 01:53:54,2026-02-24 01:53:55,failed,0,0,0,Invalid CJ API token or incorrect CID
+10,impact,,2026-02-24 01:53:55,2026-02-24 01:54:33,success,67,3278,2,
+11,flexoffers,www.rvtravellife.com,2026-03-02 22:33:35,2026-03-02 22:36:19,success,221,6270,220,
+12,flexoffers,thisoldcampsite.com,2026-03-02 22:36:19,2026-03-02 22:38:59,success,219,6137,0,
+13,awin,,2026-03-02 22:38:59,2026-03-02 22:39:10,success,14,67,0,
+14,cj,,2026-03-02 22:39:10,2026-03-02 22:39:10,failed,0,0,0,Invalid CJ API token or incorrect CID
+15,impact,,2026-03-02 22:39:10,2026-03-02 22:39:51,success,68,3232,17,

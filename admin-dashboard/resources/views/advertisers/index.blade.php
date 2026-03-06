@@ -91,6 +91,16 @@ function advertiserGrid() {
             return $map;
         })
     );
+    const eligibility = @json(
+        $advertisers->getCollection()->flatMap(function ($adv) use ($sites) {
+            $map = [];
+            foreach ($sites as $site) {
+                $key = $adv->id . '-' . $site->id;
+                $map[$key] = $adv->rulesBySite->has($site->id);
+            }
+            return $map;
+        })
+    );
     const advertiserNames = @json($advertisers->getCollection()->pluck('name', 'id'));
     const siteNames = @json($sites->pluck('name', 'id'));
     const pageIds = @json($advertisers->getCollection()->pluck('id'));
@@ -103,6 +113,7 @@ function advertiserGrid() {
         rules: { ...initialRules },
         originalRules: { ...initialRules },
         dirtyRules: {},
+        eligibility,
         showDetailModal: false,
         showConfirmModal: false,
         detailData: {},
@@ -114,6 +125,7 @@ function advertiserGrid() {
 
         getAdvertiserName(id) { return advertiserNames[id] || `#${id}`; },
         getSiteName(id) { return siteNames[id] || `#${id}`; },
+        isEligible(advId, siteId) { return this.eligibility[`${advId}-${siteId}`] !== false; },
 
         toggleSelect(id) {
             const idx = this.selected.indexOf(id);
@@ -146,6 +158,7 @@ function advertiserGrid() {
         getRuleValue(advId, siteId) { return this.rules[`${advId}-${siteId}`]; },
         getRuleCellClass(advId, siteId) {
             const key = `${advId}-${siteId}`;
+            if (this.eligibility[key] === false) return 'adv-rule-cell adv-rule-ineligible';
             const val = this.rules[key];
             const isDirty = this.dirtyRules[key];
             let c = 'adv-rule-cell ';
@@ -160,12 +173,14 @@ function advertiserGrid() {
         },
         cycleRule(advId, siteId) {
             const key = `${advId}-${siteId}`;
+            if (this.eligibility && this.eligibility[key] === false) return;
             const current = this.rules[key];
             let next;
             switch (current) {
-                case null: case 'default': next = 'allowed'; break;
+                case null: next = 'allowed'; break;
                 case 'allowed': next = 'denied'; break;
-                case 'denied': next = 'allowed'; break;
+                case 'denied': next = 'default'; break;
+                case 'default': next = 'allowed'; break;
                 default: next = 'allowed'; break;
             }
             this.rules[key] = next;
@@ -315,6 +330,30 @@ function advertiserGrid() {
     .dark .adv-rule-pending {
         background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.25));
         box-shadow: 0 0 0 1px rgba(245,158,11,0.3), 0 0 12px rgba(245,158,11,0.08);
+    }
+
+    .adv-rule-ineligible {
+        background: repeating-linear-gradient(
+            -45deg,
+            rgba(156,163,175,0.06),
+            rgba(156,163,175,0.06) 2px,
+            transparent 2px,
+            transparent 5px
+        );
+        box-shadow: 0 0 0 1px rgba(156,163,175,0.15);
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+    .adv-rule-ineligible:active { transform: none; }
+    .dark .adv-rule-ineligible {
+        background: repeating-linear-gradient(
+            -45deg,
+            rgba(75,85,99,0.15),
+            rgba(75,85,99,0.15) 2px,
+            transparent 2px,
+            transparent 5px
+        );
+        box-shadow: 0 0 0 1px rgba(75,85,99,0.3);
     }
 
     .adv-rule-none {
