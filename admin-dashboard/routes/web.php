@@ -5,6 +5,7 @@ use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeoRegionController;
+use App\Http\Controllers\PlacementController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only
@@ -17,6 +18,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 // Authenticated
 Route::middleware('auth')->group(function () {
+
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Phase 2 — Advertiser Grid
@@ -48,6 +50,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/sites/{site}/placements/{placement}', fn () => abort(501, 'Coming soon'))->name('sites.placements.update');
     Route::delete('/sites/{site}/placements/{placement}', fn () => abort(501, 'Coming soon'))->name('sites.placements.destroy');
 
+    // Placement grid page (across all sites)
+    Route::get('/placements-grid', [PlacementController::class, 'grid'])->name('placements.grid');
+
     // Geo Regions CRUD
     Route::get('/geo-regions', [GeoRegionController::class, 'index'])->name('geo-regions.index');
     Route::post('/geo-regions', [GeoRegionController::class, 'store'])->name('geo-regions.store');
@@ -59,15 +64,20 @@ Route::middleware('auth')->group(function () {
 
     // AJAX endpoints (return JSON) — Phase 2
     Route::prefix('api')->group(function () {
+
         Route::patch('/advertisers/{advertiser}/country-code', [AdvertiserController::class, 'updateCountryCode'])->name('api.advertisers.country-code.update');
         Route::patch('/advertisers/{advertiser}/rules/{site}', [AdvertiserController::class, 'updateRule'])->name('api.advertisers.rules.update');
         Route::patch('/advertisers/{advertiser}/weight', [AdvertiserController::class, 'updateWeight'])->name('api.advertisers.weight.update');
+
         Route::post('/advertisers/bulk-rules', [AdvertiserController::class, 'bulkRules'])->name('api.advertisers.bulk-rules');
         Route::post('/advertisers/bulk-weight', [AdvertiserController::class, 'bulkWeight'])->name('api.advertisers.bulk-weight');
+
         Route::patch('/ads/{ad}/approval', [AdController::class, 'updateApproval'])->name('api.ads.approval.update');
         Route::patch('/ads/{ad}/weight', [AdController::class, 'updateWeight'])->name('api.ads.weight.update');
+
         Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
         Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
+
         Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
     });
 });
