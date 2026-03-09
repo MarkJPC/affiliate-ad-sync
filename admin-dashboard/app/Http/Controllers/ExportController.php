@@ -36,10 +36,13 @@ class ExportController extends Controller
         $payload = ExportFilterService::normalize($request->validated());
         $site = Site::findOrFail($payload['site_id']);
         $preview = $this->engine->buildPreview($payload);
+        $totalRows = (int) ($preview['summary']['total_rows'] ?? 0);
 
         return response()->json([
             'status' => 'ok',
-            'message' => 'Preview generated.',
+            'message' => $totalRows > 0
+                ? 'Preview generated.'
+                : 'No rows matched the current filters.',
             'site' => [
                 'id' => $site->id,
                 'name' => $site->name,
@@ -57,12 +60,13 @@ class ExportController extends Controller
         $payload = ExportFilterService::normalize($request->validated());
         $site = Site::findOrFail($payload['site_id']);
         $download = $this->engine->buildDownloadPayload($payload, $site->domain);
+        $rowCount = (int) ($download['meta']['row_count'] ?? count($download['rows']));
         $user = auth()->user();
 
         ExportLog::create([
             'site_id' => $site->id,
             'filename' => $download['filename'],
-            'ads_exported' => $download['meta']['row_count'] ?? count($download['rows']),
+            'ads_exported' => $rowCount,
             'exported_at' => now(),
             'exported_by' => $user?->email ?? $user?->name ?? 'system',
         ]);
@@ -76,6 +80,8 @@ class ExportController extends Controller
             fclose($out);
         }, $download['filename'], [
             'Content-Type' => 'text/csv; charset=UTF-8',
+            'X-Export-Row-Count' => (string) $rowCount,
+            'X-Export-Empty' => $rowCount === 0 ? '1' : '0',
         ]);
     }
 }
