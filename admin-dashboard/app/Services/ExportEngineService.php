@@ -85,6 +85,25 @@ class ExportEngineService
                 'width',
                 'height',
                 'final_weight',
+                'imagetype',
+                'enable_stats',
+                'show_everyone',
+                'show_desktop',
+                'show_mobile',
+                'show_tablet',
+                'show_ios',
+                'show_android',
+                'autodelete',
+                'autodisable',
+                'budget',
+                'click_rate',
+                'impression_rate',
+                'state_required',
+                'geo_cities',
+                'geo_states',
+                'geo_countries',
+                'schedule_start',
+                'schedule_end',
             ]);
 
         $filters = $contract['filters'];
@@ -119,7 +138,14 @@ class ExportEngineService
                 ->where('p.is_active', 1);
         });
 
-        return $query->orderBy('ad_id')->get()->map(fn ($r) => (array) $r)->all();
+        return $query->orderBy('ad_id')
+            ->get()
+            ->map(function ($r) {
+                return $this->normalizeBannerRow((array) $r);
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function fetchTextRows(array $contract): array
@@ -255,6 +281,80 @@ class ExportEngineService
     {
         $parts = explode('x', strtolower(trim($dimensions)));
         return [(int) $parts[0], (int) $parts[1]];
+    }
+
+    private function normalizeBannerRow(array $row): ?array
+    {
+        $width = (int) ($row['width'] ?? 0);
+        $height = (int) ($row['height'] ?? 0);
+        if ($width <= 0 || $height <= 0) {
+            return null;
+        }
+
+        $bannercode = trim((string) ($row['bannercode'] ?? ''));
+        $imageUrl = trim((string) ($row['image_url'] ?? ''));
+        if ($bannercode === '' && $imageUrl === '') {
+            return null;
+        }
+
+        $finalWeight = (int) ($row['final_weight'] ?? 2);
+        if ($finalWeight <= 0) {
+            $finalWeight = 2;
+        }
+
+        $scheduleStart = (int) ($row['schedule_start'] ?? 0);
+        $scheduleEnd = (int) ($row['schedule_end'] ?? 2650941780);
+        if ($scheduleEnd <= $scheduleStart) {
+            $scheduleEnd = 2650941780;
+        }
+
+        $advertName = trim((string) ($row['advert_name'] ?? ''));
+        if ($advertName === '') {
+            $advertName = 'Ad ' . (string) ($row['ad_id'] ?? '');
+        }
+
+        $imagetype = strtolower(trim((string) ($row['imagetype'] ?? '')));
+        if ($imagetype === '') {
+            $imagetype = $imageUrl !== '' ? 'image' : 'html';
+        }
+
+        return array_merge($row, [
+            'advert_name' => $advertName,
+            'bannercode' => $bannercode,
+            'image_url' => $imageUrl,
+            'width' => $width,
+            'height' => $height,
+            'final_weight' => $finalWeight,
+            'imagetype' => $imagetype,
+            'enable_stats' => $this->normalizeYn($row['enable_stats'] ?? null, 'Y'),
+            'show_everyone' => $this->normalizeYn($row['show_everyone'] ?? null, 'Y'),
+            'show_desktop' => $this->normalizeYn($row['show_desktop'] ?? null, 'Y'),
+            'show_mobile' => $this->normalizeYn($row['show_mobile'] ?? null, 'Y'),
+            'show_tablet' => $this->normalizeYn($row['show_tablet'] ?? null, 'Y'),
+            'show_ios' => $this->normalizeYn($row['show_ios'] ?? null, 'Y'),
+            'show_android' => $this->normalizeYn($row['show_android'] ?? null, 'Y'),
+            'autodelete' => $this->normalizeYn($row['autodelete'] ?? null, 'Y'),
+            'autodisable' => $this->normalizeYn($row['autodisable'] ?? null, 'N'),
+            'budget' => is_numeric($row['budget'] ?? null) ? (float) $row['budget'] : 0.0,
+            'click_rate' => is_numeric($row['click_rate'] ?? null) ? (float) $row['click_rate'] : 0.0,
+            'impression_rate' => is_numeric($row['impression_rate'] ?? null) ? (float) $row['impression_rate'] : 0.0,
+            'state_required' => $this->normalizeYn($row['state_required'] ?? null, 'N'),
+            'geo_cities' => trim((string) ($row['geo_cities'] ?? '')) ?: 'a:0:{}',
+            'geo_states' => trim((string) ($row['geo_states'] ?? '')) ?: 'a:0:{}',
+            'geo_countries' => trim((string) ($row['geo_countries'] ?? '')) ?: 'a:0:{}',
+            'schedule_start' => $scheduleStart,
+            'schedule_end' => $scheduleEnd,
+        ]);
+    }
+
+    private function normalizeYn(mixed $value, string $default): string
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        $normalized = strtoupper(trim((string) $value));
+        return $normalized === 'Y' ? 'Y' : 'N';
     }
 
     private function extractAnchorText(string $html): string
