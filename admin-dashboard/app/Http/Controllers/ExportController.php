@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExportRequest;
 use App\Models\ExportLog;
 use App\Models\Site;
-use Illuminate\Http\Request;
+use App\Services\ExportFilterService;
 
 class ExportController extends Controller
 {
@@ -25,15 +26,10 @@ class ExportController extends Controller
         return view('export.history', compact('exports'));
     }
 
-    public function preview(Request $request)
+    public function preview(ExportRequest $request)
     {
-        $validated = $request->validate([
-            'site_id' => ['required', 'integer', 'exists:sites,id'],
-            'export_type' => ['nullable', 'in:banner,text'],
-        ]);
-
-        $site = Site::findOrFail((int) $validated['site_id']);
-        $exportType = $validated['export_type'] ?? 'banner';
+        $payload = ExportFilterService::normalize($request->validated());
+        $site = Site::findOrFail($payload['site_id']);
 
         return response()->json([
             'status' => 'ok',
@@ -43,7 +39,7 @@ class ExportController extends Controller
                 'name' => $site->name,
                 'domain' => $site->domain,
             ],
-            'export_type' => $exportType,
+            'contract' => $payload,
             'summary' => [
                 'rows' => 0,
                 'note' => 'Data preview will be added in the next implementation step.',
@@ -51,23 +47,21 @@ class ExportController extends Controller
         ]);
     }
 
-    public function download(Request $request)
+    public function download(ExportRequest $request)
     {
-        $validated = $request->validate([
-            'site_id' => ['required', 'integer', 'exists:sites,id'],
-            'export_type' => ['nullable', 'in:banner,text'],
-        ]);
+        $payload = ExportFilterService::normalize($request->validated());
+        $site = Site::findOrFail($payload['site_id']);
+        $filename = "{$site->domain}-" . now()->format('Y-m-d-His') . "-{$payload['export_type']}.csv";
 
-        $site = Site::findOrFail((int) $validated['site_id']);
-        $exportType = $validated['export_type'] ?? 'banner';
-        $filename = "{$site->domain}-" . now()->format('Y-m-d-His') . "-{$exportType}.csv";
-
-        $headers = ['status', 'message', 'site', 'export_type'];
+        $headers = ['status', 'message', 'site', 'export_type', 'network', 'dimensions', 'active_sizes_only'];
         $rows = [[
             'scaffold',
-            'Download endpoint is wired. Dataset mapping is next.',
+            'Download endpoint is wired with shared contract. Dataset mapping is next.',
             $site->domain,
-            $exportType,
+            $payload['export_type'],
+            $payload['filters']['network'] ?? '',
+            $payload['filters']['dimensions'] ?? '',
+            $payload['filters']['active_sizes_only'] ? '1' : '0',
         ]];
 
         return response()->streamDownload(function () use ($headers, $rows) {

@@ -51,6 +51,30 @@
                     </select>
                 </div>
 
+                <div>
+                    <label for="network" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Network (optional)</label>
+                    <select id="network" name="network"
+                        class="w-full rounded-lg border-gray-300 text-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <option value="">All networks</option>
+                        <option value="flexoffers">flexoffers</option>
+                        <option value="awin">awin</option>
+                        <option value="cj">cj</option>
+                        <option value="impact">impact</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="dimensions" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Dimensions (optional)</label>
+                    <input id="dimensions" name="dimensions" type="text" placeholder="300x250"
+                        class="w-full rounded-lg border-gray-300 text-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input id="active_sizes_only" name="active_sizes_only" type="checkbox" value="1" checked
+                        class="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700">
+                    <label for="active_sizes_only" class="text-sm text-gray-700 dark:text-gray-300">Active sizes only</label>
+                </div>
+
                 <button type="submit"
                     class="inline-flex items-center rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
                     Download Placeholder CSV
@@ -65,7 +89,7 @@
             </p>
 
             <div class="mt-4 rounded-md bg-gray-50 p-3 font-mono text-xs text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
-                GET {{ route('api.export.preview') }}?site_id=&lt;id&gt;&amp;export_type=banner
+                GET {{ route('api.export.preview') }}?site_id=&lt;id&gt;&amp;export_type=banner&amp;network=cj&amp;dimensions=300x250&amp;active_sizes_only=1
             </div>
 
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
