@@ -71,8 +71,9 @@ class ExportEngineService
 
     private function fetchBannerRows(array $contract): array
     {
+        $siteId = (int) $contract['site_id'];
         $query = DB::table('v_exportable_ads')
-            ->where('site_id', $contract['site_id'])
+            ->where('site_id', $siteId)
             ->select([
                 'ad_id',
                 'advertiser_name',
@@ -108,17 +109,15 @@ class ExportEngineService
             $query->where('width', $width)->where('height', $height);
         }
 
-        if (($filters['active_sizes_only'] ?? true) === true) {
-            $siteId = $contract['site_id'];
-            $query->whereExists(function ($q) use ($siteId) {
-                $q->select(DB::raw('1'))
-                    ->from('placements as p')
-                    ->whereColumn('p.width', 'v_exportable_ads.width')
-                    ->whereColumn('p.height', 'v_exportable_ads.height')
-                    ->where('p.site_id', $siteId)
-                    ->where('p.is_active', 1);
-            });
-        }
+        // Phase 2 Part B: banner exports are always placement-aware.
+        $query->whereExists(function ($q) use ($siteId) {
+            $q->select(DB::raw('1'))
+                ->from('placements as p')
+                ->whereColumn('p.width', 'v_exportable_ads.width')
+                ->whereColumn('p.height', 'v_exportable_ads.height')
+                ->where('p.site_id', $siteId)
+                ->where('p.is_active', 1);
+        });
 
         return $query->orderBy('ad_id')->get()->map(fn ($r) => (array) $r)->all();
     }
