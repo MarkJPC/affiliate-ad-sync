@@ -160,8 +160,10 @@ class ExportEngineService
             ->where('a.status', 'active')
             ->where('a.approval_status', 'approved')
             ->where('adv.is_active', 1)
+            ->distinct()
             ->select([
                 'a.id as ad_id',
+                'a.advertiser_id',
                 'adv.name as advertiser_name',
                 'a.network',
                 's.domain as site_domain',
@@ -195,12 +197,17 @@ class ExportEngineService
             });
         }
 
-        return $query->orderBy('a.id')->get()->map(function ($r) {
-            $row = (array) $r;
-            $row['anchor_text'] = $this->extractAnchorText((string) ($row['bannercode'] ?? ''));
-            $row['affiliate_link'] = (string) ($row['tracking_url'] ?? '');
-            return $row;
-        })->all();
+        return $query->orderBy('a.id')
+            ->get()
+            ->map(function ($r) {
+                $row = (array) $r;
+                $row['anchor_text'] = $this->extractAnchorText((string) ($row['bannercode'] ?? ''));
+                $row['affiliate_link'] = trim((string) ($row['tracking_url'] ?? ''));
+                return $this->normalizeTextRow($row);
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function headersForType(string $type): array
@@ -368,6 +375,58 @@ class ExportEngineService
 
         $normalized = strtoupper(trim((string) $value));
         return $normalized === 'Y' ? 'Y' : 'N';
+    }
+
+    private function normalizeTextRow(array $row): ?array
+    {
+        $affiliateLink = trim((string) ($row['affiliate_link'] ?? $row['tracking_url'] ?? ''));
+        if ($affiliateLink === '') {
+            return null;
+        }
+
+        $advertiserName = trim((string) ($row['advertiser_name'] ?? ''));
+        if ($advertiserName === '') {
+            $advertiserName = 'Advertiser ' . (string) ($row['advertiser_id'] ?? '');
+        }
+
+        $anchorText = trim((string) ($row['anchor_text'] ?? ''));
+        if ($anchorText === '') {
+            $anchorText = $advertiserName;
+        }
+
+        $network = strtolower(trim((string) ($row['network'] ?? '')));
+        if ($network === '') {
+            $network = 'unknown';
+        }
+
+        $finalWeight = (int) ($row['final_weight'] ?? 2);
+        if ($finalWeight <= 0) {
+            $finalWeight = 2;
+        }
+
+        $approvedSites = $this->normalizeApprovedSites((string) ($row['approved_sites'] ?? ''));
+        if ($approvedSites === '') {
+            $approvedSites = trim((string) ($row['site_domain'] ?? ''));
+        }
+
+        return array_merge($row, [
+            'advertiser_name' => $advertiserName,
+            'anchor_text' => $anchorText,
+            'affiliate_link' => $affiliateLink,
+            'approved_sites' => $approvedSites,
+            'network' => $network,
+            'final_weight' => $finalWeight,
+        ]);
+    }
+
+    private function normalizeApprovedSites(string $approvedSites): string
+    {
+        $parts = array_map('trim', explode(',', $approvedSites));
+        $parts = array_values(array_filter($parts, fn ($part) => $part !== ''));
+        $parts = array_values(array_unique($parts));
+        sort($parts, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return implode(', ', $parts);
     }
 
     private function extractAnchorText(string $html): string
