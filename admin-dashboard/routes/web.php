@@ -4,6 +4,7 @@ use App\Http\Controllers\AdController;
 use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\GeoRegionController;
 use App\Http\Controllers\PlacementController;
 use Illuminate\Support\Facades\Route;
@@ -27,10 +28,10 @@ Route::middleware('auth')->group(function () {
     // Phase 2 — Ad Review
     Route::get('/ads', fn () => view('ads.index'))->name('ads.index');
 
-    // Phase 2 — CSV Export
-    Route::get('/export', fn () => abort(501, 'Coming soon'))->name('export.index');
-    Route::post('/export/download', fn () => abort(501, 'Coming soon'))->name('export.download');
-    Route::get('/export/history', fn () => abort(501, 'Coming soon'))->name('export.history');
+    // CSV Export
+    Route::get('/export', [ExportController::class, 'index'])->name('export.index');
+    Route::post('/export/download', [ExportController::class, 'download'])->name('export.download');
+    Route::get('/export/history', [ExportController::class, 'history'])->name('export.history');
 
     // Phase 3 — Sites CRUD
     Route::get('/sites', fn () => abort(501, 'Coming soon'))->name('sites.index');
@@ -78,6 +79,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
         Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
 
-        Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
+        Route::get('/export/preview', [ExportController::class, 'preview'])->name('api.export.preview');
     });
 });
