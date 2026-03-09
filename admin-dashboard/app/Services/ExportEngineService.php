@@ -177,7 +177,35 @@ class ExportEngineService
             return ['ad_id', 'advertiser_name', 'anchor_text', 'affiliate_link', 'site_domain', 'network', 'final_weight'];
         }
 
-        return ['ad_id', 'advertiser_name', 'network', 'site_domain', 'advert_name', 'width', 'height', 'final_weight', 'image_url'];
+        // AdRotate-compatible banner CSV headers (ordered).
+        return [
+            'advert_name',
+            'bannercode',
+            'imagetype',
+            'image_url',
+            'width',
+            'height',
+            'campaign_name',
+            'enable_stats',
+            'show_everyone',
+            'show_desktop',
+            'show_mobile',
+            'show_tablet',
+            'show_ios',
+            'show_android',
+            'weight',
+            'autodelete',
+            'autodisable',
+            'budget',
+            'click_rate',
+            'impression_rate',
+            'state_required',
+            'geo_cities',
+            'geo_states',
+            'geo_countries',
+            'schedule_start',
+            'schedule_end',
+        ];
     }
 
     private function rowForType(string $type, array $row): array
@@ -195,15 +223,32 @@ class ExportEngineService
         }
 
         return [
-            $row['ad_id'] ?? '',
-            $row['advertiser_name'] ?? '',
-            $row['network'] ?? '',
-            $row['site_domain'] ?? '',
             $row['advert_name'] ?? '',
+            $row['bannercode'] ?? '',
+            $row['imagetype'] ?? '',
+            $row['image_url'] ?? '',
             $row['width'] ?? '',
             $row['height'] ?? '',
-            $row['final_weight'] ?? '',
-            $row['image_url'] ?? '',
+            $row['campaign_name'] ?? 'General Promotion',
+            $row['enable_stats'] ?? 'Y',
+            $row['show_everyone'] ?? 'Y',
+            $row['show_desktop'] ?? 'Y',
+            $row['show_mobile'] ?? 'Y',
+            $row['show_tablet'] ?? 'Y',
+            $row['show_ios'] ?? 'Y',
+            $row['show_android'] ?? 'Y',
+            $row['final_weight'] ?? 2,
+            $row['autodelete'] ?? 'Y',
+            $row['autodisable'] ?? 'N',
+            $row['budget'] ?? 0,
+            $row['click_rate'] ?? 0,
+            $row['impression_rate'] ?? 0,
+            $row['state_required'] ?? 'N',
+            $row['geo_cities'] ?? 'a:0:{}',
+            $row['geo_states'] ?? 'a:0:{}',
+            $row['geo_countries'] ?? 'a:0:{}',
+            $row['schedule_start'] ?? 0,
+            $row['schedule_end'] ?? 2650941780,
         ];
     }
 
