@@ -168,6 +168,13 @@ class ExportEngineService
                 'a.tracking_url',
                 'a.bannercode',
                 DB::raw('COALESCE(a.weight_override, adv.default_weight, 2) as final_weight'),
+                DB::raw("(
+                    SELECT GROUP_CONCAT(s2.domain, ', ')
+                    FROM site_advertiser_rules sar2
+                    JOIN sites s2 ON s2.id = sar2.site_id
+                    WHERE sar2.advertiser_id = adv.id
+                      AND sar2.rule = 'allowed'
+                ) as approved_sites"),
             ]);
 
         $filters = $contract['filters'];
@@ -199,7 +206,14 @@ class ExportEngineService
     private function headersForType(string $type): array
     {
         if ($type === 'text') {
-            return ['ad_id', 'advertiser_name', 'anchor_text', 'affiliate_link', 'site_domain', 'network', 'final_weight'];
+            return [
+                'advertiser_name',
+                'anchor_text',
+                'affiliate_link',
+                'approved_sites',
+                'network',
+                'weight',
+            ];
         }
 
         // AdRotate-compatible banner CSV headers (ordered).
@@ -237,13 +251,12 @@ class ExportEngineService
     {
         if ($type === 'text') {
             return [
-                $row['ad_id'] ?? '',
                 $row['advertiser_name'] ?? '',
                 $row['anchor_text'] ?? '',
                 $row['affiliate_link'] ?? '',
-                $row['site_domain'] ?? '',
+                $row['approved_sites'] ?? '',
                 $row['network'] ?? '',
-                $row['final_weight'] ?? '',
+                $row['final_weight'] ?? 2,
             ];
         }
 
