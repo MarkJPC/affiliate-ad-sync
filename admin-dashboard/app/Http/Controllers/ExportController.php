@@ -57,6 +57,15 @@ class ExportController extends Controller
         $payload = ExportFilterService::normalize($request->validated());
         $site = Site::findOrFail($payload['site_id']);
         $download = $this->engine->buildDownloadPayload($payload, $site->domain);
+        $user = auth()->user();
+
+        ExportLog::create([
+            'site_id' => $site->id,
+            'filename' => $download['filename'],
+            'ads_exported' => $download['meta']['row_count'] ?? count($download['rows']),
+            'exported_at' => now(),
+            'exported_by' => $user?->email ?? $user?->name ?? 'system',
+        ]);
 
         return response()->streamDownload(function () use ($download) {
             $out = fopen('php://output', 'w');

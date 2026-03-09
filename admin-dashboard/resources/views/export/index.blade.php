@@ -7,7 +7,7 @@
     <div>
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Export CSV</h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Export endpoints are wired. This page is the base scaffold for preview and download flows.
+            Generate export CSV files and review recent export activity.
         </p>
     </div>
 
@@ -23,9 +23,9 @@
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Download Scaffold CSV</h2>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Download CSV</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                This currently downloads a placeholder CSV to confirm routing and request validation.
+                Exports are generated from the current filter contract and logged to export history.
             </p>
 
             <form method="POST" action="{{ route('export.download') }}" class="mt-4 space-y-4">
@@ -77,7 +77,7 @@
 
                 <button type="submit"
                     class="inline-flex items-center rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
-                    Download Placeholder CSV
+                    Download CSV
                 </button>
             </form>
         </div>
@@ -85,7 +85,7 @@
         <div class="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Preview Endpoint</h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Use this to validate preview route wiring while preview data logic is being built.
+                Use this endpoint to inspect preview counts and sample rows for the selected contract.
             </p>
 
             <div class="mt-4 rounded-md bg-gray-50 p-3 font-mono text-xs text-gray-700 dark:bg-gray-700/50 dark:text-gray-200">
@@ -93,7 +93,7 @@
             </div>
 
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                Endpoint currently returns scaffold metadata and validated request context.
+                Preview returns normalized contract details, grouped counts, and sample rows.
             </p>
         </div>
     </div>
