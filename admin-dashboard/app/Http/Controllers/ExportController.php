@@ -6,9 +6,14 @@ use App\Http\Requests\ExportRequest;
 use App\Models\ExportLog;
 use App\Models\Site;
 use App\Services\ExportFilterService;
+use App\Services\ExportEngineService;
 
 class ExportController extends Controller
 {
+    public function __construct(private readonly ExportEngineService $engine)
+    {
+    }
+
     public function index()
     {
         $sites = Site::where('is_active', true)->orderBy('name')->get();
@@ -30,20 +35,20 @@ class ExportController extends Controller
     {
         $payload = ExportFilterService::normalize($request->validated());
         $site = Site::findOrFail($payload['site_id']);
+        $preview = $this->engine->buildPreview($payload);
 
         return response()->json([
             'status' => 'ok',
-            'message' => 'Preview endpoint scaffold is ready.',
+            'message' => 'Preview generated.',
             'site' => [
                 'id' => $site->id,
                 'name' => $site->name,
                 'domain' => $site->domain,
             ],
             'contract' => $payload,
-            'summary' => [
-                'rows' => 0,
-                'note' => 'Data preview will be added in the next implementation step.',
-            ],
+            'summary' => $preview['summary'],
+            'sample_rows' => $preview['sample_rows'],
+            'meta' => $preview['meta'],
         ]);
     }
 
@@ -51,27 +56,16 @@ class ExportController extends Controller
     {
         $payload = ExportFilterService::normalize($request->validated());
         $site = Site::findOrFail($payload['site_id']);
-        $filename = "{$site->domain}-" . now()->format('Y-m-d-His') . "-{$payload['export_type']}.csv";
+        $download = $this->engine->buildDownloadPayload($payload, $site->domain);
 
-        $headers = ['status', 'message', 'site', 'export_type', 'network', 'dimensions', 'active_sizes_only'];
-        $rows = [[
-            'scaffold',
-            'Download endpoint is wired with shared contract. Dataset mapping is next.',
-            $site->domain,
-            $payload['export_type'],
-            $payload['filters']['network'] ?? '',
-            $payload['filters']['dimensions'] ?? '',
-            $payload['filters']['active_sizes_only'] ? '1' : '0',
-        ]];
-
-        return response()->streamDownload(function () use ($headers, $rows) {
+        return response()->streamDownload(function () use ($download) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, $headers);
-            foreach ($rows as $row) {
+            fputcsv($out, $download['headers']);
+            foreach ($download['rows'] as $row) {
                 fputcsv($out, $row);
             }
             fclose($out);
-        }, $filename, [
+        }, $download['filename'], [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
