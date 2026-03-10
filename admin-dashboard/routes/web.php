@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\GeoRegionController;
 use App\Http\Controllers\PlacementController;
+use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only
@@ -33,14 +34,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/export/download', [ExportController::class, 'download'])->name('export.download');
     Route::get('/export/history', [ExportController::class, 'history'])->name('export.history');
 
-    // Phase 3 — Sites CRUD
-    Route::get('/sites', fn () => abort(501, 'Coming soon'))->name('sites.index');
-    Route::get('/sites/create', fn () => abort(501, 'Coming soon'))->name('sites.create');
-    Route::post('/sites', fn () => abort(501, 'Coming soon'))->name('sites.store');
-    Route::get('/sites/{site}', fn () => abort(501, 'Coming soon'))->name('sites.show');
-    Route::get('/sites/{site}/edit', fn () => abort(501, 'Coming soon'))->name('sites.edit');
-    Route::put('/sites/{site}', fn () => abort(501, 'Coming soon'))->name('sites.update');
-    Route::delete('/sites/{site}', fn () => abort(501, 'Coming soon'))->name('sites.destroy');
+    // Sites — index page with placements grid
+    Route::get('/sites', [SiteController::class, 'index'])->name('sites.index');
 
     // Phase 3 — Placements (nested under sites)
     Route::get('/sites/{site}/placements', fn () => abort(501, 'Coming soon'))->name('sites.placements.index');
@@ -79,6 +74,19 @@ Route::middleware('auth')->group(function () {
         Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
         Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
 
-        Route::get('/export/preview', [ExportController::class, 'preview'])->name('api.export.preview');
+        Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
+
+        // Sites API (modal CRUD)
+        Route::post('/sites', [SiteController::class, 'store'])->name('api.sites.store');
+        Route::patch('/sites/{site}', [SiteController::class, 'update'])->name('api.sites.update');
+        Route::delete('/sites/{site}', [SiteController::class, 'destroy'])->name('api.sites.destroy');
+
+        // Placements API
+        Route::patch('/placements/{placement}/group', [PlacementController::class, 'updateGroup'])->name('api.placements.group.update');
+        Route::patch('/placements/{placement}/toggle-active', [PlacementController::class, 'toggleActive'])->name('api.placements.toggle-active');
+        Route::post('/placements/add-size', [PlacementController::class, 'addSize'])->name('api.placements.add-size');
+        Route::put('/placements/update-size', [PlacementController::class, 'updateSize'])->name('api.placements.update-size');
+        Route::delete('/placements/delete-size', [PlacementController::class, 'deleteSize'])->name('api.placements.delete-size');
+        Route::post('/placements/bulk-update', [PlacementController::class, 'bulkUpdate'])->name('api.placements.bulk-update');
     });
 });
