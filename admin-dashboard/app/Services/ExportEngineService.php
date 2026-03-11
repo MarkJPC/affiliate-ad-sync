@@ -27,7 +27,7 @@ class ExportEngineService
         ksort($groupByNetwork);
         ksort($groupByDimensions);
 
-        return [
+        $result = [
             'summary' => [
                 'total_rows' => count($rows),
                 'grouped_by_network' => $groupByNetwork,
@@ -39,6 +39,12 @@ class ExportEngineService
                 'export_type' => $contract['export_type'],
             ],
         ];
+
+        if (count($rows) === 0) {
+            $result['diagnostics'] = $this->diagnoseMissingRows($contract);
+        }
+
+        return $result;
     }
 
     public function buildDownloadPayload(array $contract, string $siteDomain): array
@@ -128,15 +134,16 @@ class ExportEngineService
             $query->where('width', $width)->where('height', $height);
         }
 
-        // Phase 2 Part B: banner exports are always placement-aware.
-        $query->whereExists(function ($q) use ($siteId) {
-            $q->select(DB::raw('1'))
-                ->from('placements as p')
-                ->whereColumn('p.width', 'v_exportable_ads.width')
-                ->whereColumn('p.height', 'v_exportable_ads.height')
-                ->where('p.site_id', $siteId)
-                ->where('p.is_active', 1);
-        });
+        if ($filters['active_sizes_only'] ?? true) {
+            $query->whereExists(function ($q) use ($siteId) {
+                $q->select(DB::raw('1'))
+                    ->from('placements as p')
+                    ->whereColumn('p.width', 'v_exportable_ads.width')
+                    ->whereColumn('p.height', 'v_exportable_ads.height')
+                    ->where('p.site_id', $siteId)
+                    ->where('p.is_active', 1);
+            });
+        }
 
         return $query->orderBy('ad_id')
             ->get()
@@ -150,6 +157,21 @@ class ExportEngineService
 
     private function fetchTextRows(array $contract): array
     {
+        $baseColumns = [
+            'a.id as ad_id',
+            'a.advertiser_id',
+            'adv.name as advertiser_name',
+            'a.network',
+            's.domain as site_domain',
+            'a.tracking_url',
+            'a.bannercode',
+        ];
+
+        // ad_content may not exist on older SQLite dev databases
+        if ($this->columnExists('ads', 'ad_content')) {
+            $baseColumns[] = 'a.ad_content';
+        }
+
         $query = DB::table('ads as a')
             ->join('advertisers as adv', 'a.advertiser_id', '=', 'adv.id')
             ->join('site_advertiser_rules as sar', 'sar.advertiser_id', '=', 'adv.id')
@@ -158,17 +180,10 @@ class ExportEngineService
             ->where('sar.rule', 'allowed')
             ->where('a.creative_type', 'text')
             ->where('a.status', 'active')
-            ->where('a.approval_status', 'approved')
+            ->where('a.approval_status', '!=', 'denied')
             ->where('adv.is_active', 1)
             ->distinct()
-            ->select([
-                'a.id as ad_id',
-                'a.advertiser_id',
-                'adv.name as advertiser_name',
-                'a.network',
-                's.domain as site_domain',
-                'a.tracking_url',
-                'a.bannercode',
+            ->select(array_merge($baseColumns, [
                 DB::raw('COALESCE(a.weight_override, adv.default_weight, 2) as final_weight'),
                 DB::raw("(
                     SELECT GROUP_CONCAT(s2.domain, ', ')
@@ -177,7 +192,7 @@ class ExportEngineService
                     WHERE sar2.advertiser_id = adv.id
                       AND sar2.rule = 'allowed'
                 ) as approved_sites"),
-            ]);
+            ]));
 
         $filters = $contract['filters'];
         if (! empty($filters['network'])) {
@@ -201,7 +216,12 @@ class ExportEngineService
             ->get()
             ->map(function ($r) {
                 $row = (array) $r;
-                $row['anchor_text'] = $this->extractAnchorText((string) ($row['bannercode'] ?? ''));
+                // Prefer ad_content (CJ ad-content, FlexOffers linkDescription, etc.)
+                // Fall back to stripping HTML from bannercode
+                $adContent = trim((string) ($row['ad_content'] ?? ''));
+                $row['anchor_text'] = $adContent !== ''
+                    ? $adContent
+                    : $this->extractAnchorText((string) ($row['bannercode'] ?? ''));
                 $row['affiliate_link'] = trim((string) ($row['tracking_url'] ?? ''));
                 return $this->normalizeTextRow($row);
             })
@@ -223,15 +243,13 @@ class ExportEngineService
             ];
         }
 
-        // AdRotate-compatible banner CSV headers (ordered).
+        // AdRotate-compatible banner CSV headers (24 columns, matches real AdRotate export).
         return [
+            'id',
             'advert_name',
             'bannercode',
             'imagetype',
             'image_url',
-            'width',
-            'height',
-            'campaign_name',
             'enable_stats',
             'show_everyone',
             'show_desktop',
@@ -268,13 +286,11 @@ class ExportEngineService
         }
 
         return [
+            '',  // id — empty for new ads (no AdRotate ID yet)
             $row['advert_name'] ?? '',
             $row['bannercode'] ?? '',
             $row['imagetype'] ?? '',
             $row['image_url'] ?? '',
-            $row['width'] ?? '',
-            $row['height'] ?? '',
-            $row['campaign_name'] ?? 'General Promotion',
             $row['enable_stats'] ?? 'Y',
             $row['show_everyone'] ?? 'Y',
             $row['show_desktop'] ?? 'Y',
@@ -333,9 +349,10 @@ class ExportEngineService
             $advertName = 'Ad ' . (string) ($row['ad_id'] ?? '');
         }
 
+        // AdRotate uses blank imagetype for affiliate ads; only 'dropdown' for uploaded images
         $imagetype = strtolower(trim((string) ($row['imagetype'] ?? '')));
-        if ($imagetype === '') {
-            $imagetype = $imageUrl !== '' ? 'image' : 'html';
+        if (!in_array($imagetype, ['dropdown'], true)) {
+            $imagetype = '';
         }
 
         return array_merge($row, [
@@ -439,5 +456,92 @@ class ExportEngineService
     private function buildFilename(string $siteDomain, string $exportType): string
     {
         return "{$siteDomain}-" . now()->format('Y-m-d-His') . "-{$exportType}.csv";
+    }
+
+    private function columnExists(string $table, string $column): bool
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            $columns = DB::select("PRAGMA table_info({$table})");
+            return collect($columns)->contains('name', $column);
+        }
+
+        // MySQL / MariaDB
+        $db = DB::getDatabaseName();
+        $result = DB::select(
+            'SELECT COUNT(*) as cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [$db, $table, $column]
+        );
+
+        return ((int) ($result[0]->cnt ?? 0)) > 0;
+    }
+
+    private function diagnoseMissingRows(array $contract): array
+    {
+        $siteId = (int) $contract['site_id'];
+        $exportType = $contract['export_type'];
+        $messages = [];
+
+        // 1. Any approved advertisers for this site?
+        $allowedCount = (int) DB::table('site_advertiser_rules')
+            ->where('site_id', $siteId)
+            ->where('rule', 'allowed')
+            ->count();
+
+        if ($allowedCount === 0) {
+            $messages[] = 'No advertisers are approved (allowed) for this site. Approve advertisers on the Advertisers page first.';
+            return ['messages' => $messages];
+        }
+
+        $messages[] = "{$allowedCount} advertiser(s) approved for this site.";
+
+        // 2. How many active, non-denied ads exist for those advertisers?
+        $baseQuery = DB::table('ads as a')
+            ->join('advertisers as adv', 'a.advertiser_id', '=', 'adv.id')
+            ->join('site_advertiser_rules as sar', 'sar.advertiser_id', '=', 'adv.id')
+            ->where('sar.site_id', $siteId)
+            ->where('sar.rule', 'allowed')
+            ->where('a.status', 'active')
+            ->where('a.approval_status', '!=', 'denied')
+            ->where('adv.is_active', 1);
+
+        $totalAds = (int) (clone $baseQuery)->count(DB::raw('DISTINCT a.id'));
+        $bannerCount = (int) (clone $baseQuery)->where('a.creative_type', 'banner')->count(DB::raw('DISTINCT a.id'));
+        $textCount = (int) (clone $baseQuery)->where('a.creative_type', 'text')->count(DB::raw('DISTINCT a.id'));
+
+        $messages[] = "{$totalAds} eligible ad(s) total: {$bannerCount} banner, {$textCount} text.";
+
+        if ($exportType === 'banner' && $bannerCount === 0 && $textCount > 0) {
+            $messages[] = "No banner ads found. Try switching export type to 'Text'.";
+        } elseif ($exportType === 'text' && $textCount === 0 && $bannerCount > 0) {
+            $messages[] = "No text ads found. Try switching export type to 'Banner'.";
+        }
+
+        // 3. For banner exports, check placement/dimension match
+        if ($exportType === 'banner' && $bannerCount > 0) {
+            $filters = $contract['filters'] ?? [];
+            if (! empty($filters['dimensions'])) {
+                [$w, $h] = $this->parseDimensions($filters['dimensions']);
+                $dimCount = (int) (clone $baseQuery)
+                    ->where('a.creative_type', 'banner')
+                    ->where('a.width', $w)
+                    ->where('a.height', $h)
+                    ->count(DB::raw('DISTINCT a.id'));
+                $messages[] = "{$dimCount} banner ad(s) match dimensions {$w}x{$h}.";
+            }
+
+            if ($filters['active_sizes_only'] ?? true) {
+                $activeSizes = DB::table('placements')
+                    ->where('site_id', $siteId)
+                    ->where('is_active', 1)
+                    ->get(['width', 'height'])
+                    ->map(fn ($p) => "{$p->width}x{$p->height}")
+                    ->implode(', ');
+                $messages[] = "Active placement sizes for this site: {$activeSizes}.";
+            }
+        }
+
+        return ['messages' => $messages];
     }
 }

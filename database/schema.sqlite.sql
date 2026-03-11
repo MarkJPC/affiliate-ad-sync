@@ -48,6 +48,9 @@ CREATE TABLE advertisers (
     name                    TEXT    NOT NULL,
     website_url             TEXT    NULL,
     category                TEXT    NULL,
+    description             TEXT    NULL,
+    logo_url                TEXT    NULL,
+    network_rank            REAL    NULL,
 
     -- Performance metrics
     total_clicks            INTEGER NOT NULL DEFAULT 0,
@@ -118,8 +121,9 @@ CREATE TABLE ads (
     revenue             REAL    NOT NULL DEFAULT 0.00,
     epc                 REAL    NOT NULL DEFAULT 0.0000,
 
-    -- Approval: GLOBAL (not per-site). Ads default to approved.
-    approval_status     TEXT    NOT NULL DEFAULT 'approved' CHECK (approval_status IN ('approved', 'denied')),
+    -- Approval: GLOBAL (not per-site). New ads start as pending.
+    -- Promoted to 'approved' when their advertiser is allowed on any site.
+    approval_status     TEXT    NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('approved', 'pending', 'denied')),
     approval_reason     TEXT    NULL,
 
     -- Weight override: if set, takes priority over advertiser default_weight.
@@ -128,6 +132,9 @@ CREATE TABLE ads (
     -- Sync tracking
     last_synced_at      TEXT    NULL,
     raw_hash            TEXT    NULL,
+
+    -- Ad content: promotional copy / anchor text for text exports
+    ad_content          TEXT    NULL,
 
     -- AdRotate fields (exported directly to CSV)
     advert_name         TEXT    NOT NULL,
@@ -348,7 +355,7 @@ JOIN sites s ON sar.site_id = s.id
 WHERE
     sar.rule = 'allowed'
     AND adv.is_active = 1
-    AND a.approval_status = 'approved'
+    AND a.approval_status != 'denied'
     AND a.status = 'active';
 
 

@@ -15,6 +15,9 @@ class Advertiser extends Model
         'name',
         'website_url',
         'category',
+        'description',
+        'logo_url',
+        'network_rank',
         'total_clicks',
         'total_revenue',
         'epc',
@@ -31,6 +34,7 @@ class Advertiser extends Model
         return [
             'epc' => 'float',
             'total_revenue' => 'float',
+            'network_rank' => 'float',
             'is_active' => 'boolean',
         ];
     }

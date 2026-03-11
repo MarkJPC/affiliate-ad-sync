@@ -2,7 +2,11 @@
 
 import hashlib
 import json
+import logging
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 
 class Mapper(ABC):
@@ -44,6 +48,22 @@ class Mapper(ABC):
         ...
 
     @staticmethod
+    def parse_date_to_unix(date_str: str | None, default: int = 0) -> int:
+        """Parse a date string to unix timestamp. Returns default on failure."""
+        if not date_str:
+            return default
+        for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
+                     "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"):
+            try:
+                dt = datetime.strptime(date_str.strip(), fmt)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return int(dt.timestamp())
+            except (ValueError, TypeError):
+                continue
+        return default
+
+    @staticmethod
     def compute_hash(raw: dict) -> str:
         """Compute SHA-256 hash of raw API response for change detection.
 
@@ -55,3 +75,7 @@ class Mapper(ABC):
         """
         serialized = json.dumps(raw, sort_keys=True, default=str)
         return hashlib.sha256(serialized.encode()).hexdigest()
+
+
+# Convenience alias for imports
+parse_date_to_unix = Mapper.parse_date_to_unix

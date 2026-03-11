@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ExportRequest;
+use App\Models\Advertiser;
 use App\Models\ExportLog;
 use App\Models\Site;
 use App\Services\ExportFilterService;
 use App\Services\ExportEngineService;
+use Illuminate\Support\Facades\DB;
 
 class ExportController extends Controller
 {
@@ -18,8 +20,19 @@ class ExportController extends Controller
     {
         $sites = Site::where('is_active', true)->orderBy('name')->get();
         $recentExports = ExportLog::with('site')->orderByDesc('exported_at')->limit(10)->get();
+        $advertisers = Advertiser::where('is_active', true)->orderBy('name')->get(['id', 'name', 'network']);
+        $activeDimensions = DB::table('placements')
+            ->where('is_active', 1)
+            ->select(DB::raw('DISTINCT width, height'))
+            ->orderBy('width')
+            ->orderBy('height')
+            ->get()
+            ->map(fn ($p) => $p->width . 'x' . $p->height)
+            ->unique()
+            ->values()
+            ->all();
 
-        return view('export.index', compact('sites', 'recentExports'));
+        return view('export.index', compact('sites', 'recentExports', 'advertisers', 'activeDimensions'));
     }
 
     public function history()
@@ -38,7 +51,7 @@ class ExportController extends Controller
         $preview = $this->engine->buildPreview($payload);
         $totalRows = (int) ($preview['summary']['total_rows'] ?? 0);
 
-        return response()->json([
+        $response = [
             'status' => 'ok',
             'message' => $totalRows > 0
                 ? 'Preview generated.'
@@ -52,7 +65,13 @@ class ExportController extends Controller
             'summary' => $preview['summary'],
             'sample_rows' => $preview['sample_rows'],
             'meta' => $preview['meta'],
-        ]);
+        ];
+
+        if (isset($preview['diagnostics'])) {
+            $response['diagnostics'] = $preview['diagnostics'];
+        }
+
+        return response()->json($response);
     }
 
     public function download(ExportRequest $request)
@@ -71,8 +90,13 @@ class ExportController extends Controller
             'exported_by' => $user?->email ?? $user?->name ?? 'system',
         ]);
 
-        return response()->streamDownload(function () use ($download) {
+        $exportType = $payload['export_type'];
+
+        return response()->streamDownload(function () use ($download, $exportType) {
             $out = fopen('php://output', 'w');
+            if ($exportType === 'banner') {
+                fputcsv($out, ['Version', 'AdRotate Professional', '5.26.2']);
+            }
             fputcsv($out, $download['headers']);
             foreach ($download['rows'] as $row) {
                 fputcsv($out, $row);

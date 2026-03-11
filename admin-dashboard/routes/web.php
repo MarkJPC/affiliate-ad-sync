@@ -8,6 +8,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\GeoRegionController;
 use App\Http\Controllers\PlacementController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\SyncLogController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only
@@ -56,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/geo-regions/{geoRegion}', [GeoRegionController::class, 'destroy'])->name('geo-regions.destroy');
 
     // Phase 3 — Sync Logs
-    Route::get('/sync-logs', fn () => abort(501, 'Coming soon'))->name('sync-logs.index');
+    Route::get('/sync-logs', [SyncLogController::class, 'index'])->name('sync-logs.index');
 
     // AJAX endpoints (return JSON) — Phase 2
     Route::prefix('api')->group(function () {
@@ -74,7 +75,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
         Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
 
-        Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
+        Route::get('/export/preview', [ExportController::class, 'preview'])->name('api.export.preview');
+
+        // Sync trigger
+        Route::post('/sync/trigger', [SyncLogController::class, 'trigger'])->name('api.sync.trigger');
 
         // Sites API (modal CRUD)
         Route::post('/sites', [SiteController::class, 'store'])->name('api.sites.store');

@@ -3,7 +3,7 @@
 import re
 
 from ..geo import infer_country_from_url
-from .base import Mapper
+from .base import Mapper, parse_date_to_unix
 
 
 class CJMapper(Mapper):
@@ -55,6 +55,9 @@ class CJMapper(Mapper):
             "status": "active" if is_active else "paused",
             "website_url": program_url,
             "category": raw.get("primary-category/child", ""),
+            "description": "",  # CJ doesn't provide advertiser description in link search
+            "logo_url": "",  # CJ doesn't provide logo in link search
+            "network_rank": float(raw.get("network-rank") or 0) or None,
             "country_code": infer_country_from_url(program_url),
             "epc": self._parse_epc(raw.get("seven-day-epc", "")),
             "raw_hash": Mapper.compute_hash(raw),
@@ -117,6 +120,7 @@ class CJMapper(Mapper):
             "raw_hash": Mapper.compute_hash(raw),
             "name": link_name,
             "raw_data": raw,
+            "ad_content": raw.get("ad-content", ""),
 
             # AdRotate fields
             "advert_name": advert_name,
@@ -151,9 +155,9 @@ class CJMapper(Mapper):
             "geo_states": "a:0:{}",
             "geo_countries": "a:0:{}",
 
-            # Schedule (no start, far future end)
-            "schedule_start": 0,
-            "schedule_end": 2650941780,
+            # Schedule: use real dates if available
+            "schedule_start": parse_date_to_unix(raw.get("performance-start-date"), 0),
+            "schedule_end": parse_date_to_unix(raw.get("performance-end-date"), 2650941780),
         }
 
     def _sanitize_name(self, name: str) -> str:
