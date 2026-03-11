@@ -93,6 +93,9 @@ python setup-dev-db.py
 
 # Verify it worked
 python setup-dev-db.py --verify
+
+# Validate export Phase 0 prerequisites (schema/view readiness)
+python3 scripts/validate_export_phase0.py
 ```
 
 ### 2. Run the Sync Service

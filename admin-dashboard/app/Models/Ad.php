@@ -26,6 +26,7 @@ class Ad extends Model
         'weight_override',
         'last_synced_at',
         'raw_hash',
+        'ad_content',
         'advert_name',
         'bannercode',
         'imagetype',

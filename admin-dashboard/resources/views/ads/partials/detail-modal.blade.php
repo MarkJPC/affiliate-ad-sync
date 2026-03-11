@@ -42,7 +42,9 @@
                     </span>
                 </div>
                 <h3 class="font-display text-xl font-500 tracking-tight text-gray-900 dark:text-white" x-text="detailAd?.advert_name"></h3>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400" x-text="detailAd?.advertiser_name"></p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400"
+                    x-text="detailAd?.advertiser_name"
+                    @click="if (detailAd?.id) openAdvertiserPopup(detailAd.id)"></p>
             </div>
         </div>
 
@@ -85,7 +87,9 @@
             </div>
             <div class="flex items-center justify-between py-2.5">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Advertiser</span>
-                <span class="text-xs text-gray-900 dark:text-white" x-text="detailAd?.advertiser_name"></span>
+                <span class="text-xs text-cyan-600 dark:text-cyan-400 cursor-pointer hover:underline"
+                    x-text="detailAd?.advertiser_name"
+                    @click="if (detailAd?.id) openAdvertiserPopup(detailAd.id)"></span>
             </div>
             <div class="flex items-center justify-between py-2.5">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Creative Type</span>

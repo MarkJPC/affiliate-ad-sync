@@ -4,9 +4,11 @@ use App\Http\Controllers\AdController;
 use App\Http\Controllers\AdvertiserController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\GeoRegionController;
 use App\Http\Controllers\PlacementController;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\SyncLogController;
 use Illuminate\Support\Facades\Route;
 
 // Guest-only
@@ -28,10 +30,10 @@ Route::middleware('auth')->group(function () {
     // Phase 2 — Ad Review
     Route::get('/ads', fn () => view('ads.index'))->name('ads.index');
 
-    // Phase 2 — CSV Export
-    Route::get('/export', fn () => abort(501, 'Coming soon'))->name('export.index');
-    Route::post('/export/download', fn () => abort(501, 'Coming soon'))->name('export.download');
-    Route::get('/export/history', fn () => abort(501, 'Coming soon'))->name('export.history');
+    // CSV Export
+    Route::get('/export', [ExportController::class, 'index'])->name('export.index');
+    Route::post('/export/download', [ExportController::class, 'download'])->name('export.download');
+    Route::get('/export/history', [ExportController::class, 'history'])->name('export.history');
 
     // Sites — index page with placements grid
     Route::get('/sites', [SiteController::class, 'index'])->name('sites.index');
@@ -55,7 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/geo-regions/{geoRegion}', [GeoRegionController::class, 'destroy'])->name('geo-regions.destroy');
 
     // Phase 3 — Sync Logs
-    Route::get('/sync-logs', fn () => abort(501, 'Coming soon'))->name('sync-logs.index');
+    Route::get('/sync-logs', [SyncLogController::class, 'index'])->name('sync-logs.index');
 
     // AJAX endpoints (return JSON) — Phase 2
     Route::prefix('api')->group(function () {
@@ -73,7 +75,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/ads/bulk-approval', [AdController::class, 'bulkApproval'])->name('api.ads.bulk-approval');
         Route::post('/ads/mark-reviewed', [AdController::class, 'markReviewed'])->name('api.ads.mark-reviewed');
 
-        Route::get('/export/preview', fn () => abort(501))->name('api.export.preview');
+        Route::get('/export/preview', [ExportController::class, 'preview'])->name('api.export.preview');
+
+        // Sync trigger
+        Route::post('/sync/trigger', [SyncLogController::class, 'trigger'])->name('api.sync.trigger');
 
         // Sites API (modal CRUD)
         Route::post('/sites', [SiteController::class, 'store'])->name('api.sites.store');

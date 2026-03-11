@@ -237,6 +237,8 @@ function adReviewGrid() {
         ads: {},
         pageIds: [],
         toast: { show: false, message: '', type: 'success' },
+        showAdvertiserPopup: false,
+        advertiserDetail: null,
 
         init() {
             // Listen for Livewire ads-updated event
@@ -387,6 +389,23 @@ function adReviewGrid() {
         openDetail(id) {
             this.detailAd = this.ads[id];
             this.showDetailModal = true;
+        },
+
+        // Advertiser popup
+        openAdvertiserPopup(adId) {
+            const ad = this.ads[adId];
+            if (!ad) return;
+            this.advertiserDetail = {
+                name: ad.advertiser_name,
+                network: ad.network,
+                description: ad.advertiser_description,
+                logo_url: ad.advertiser_logo_url,
+                network_rank: ad.advertiser_network_rank,
+                website_url: ad.advertiser_website_url,
+                category: ad.advertiser_category,
+                geo_region: ad.geo_region,
+            };
+            this.showAdvertiserPopup = true;
         },
 
         async saveWeight(id, weight) {

@@ -219,12 +219,16 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
 
     if _use_sqlite:
         sql = f"""INSERT INTO advertisers
-                  (network, network_advertiser_id, name, website_url, category, country_code, epc, raw_hash, last_synced_at)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
+                  (network, network_advertiser_id, name, website_url, category,
+                   description, logo_url, network_rank, country_code, epc, raw_hash, last_synced_at)
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
                   ON CONFLICT(network, network_advertiser_id) DO UPDATE SET
                       name = excluded.name,
                       website_url = excluded.website_url,
                       category = excluded.category,
+                      description = excluded.description,
+                      logo_url = excluded.logo_url,
+                      network_rank = excluded.network_rank,
                       country_code = excluded.country_code,
                       epc = excluded.epc,
                       raw_hash = excluded.raw_hash,
@@ -236,6 +240,9 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
             data["name"],
             data.get("website_url"),
             data.get("category"),
+            data.get("description"),
+            data.get("logo_url"),
+            data.get("network_rank"),
             data.get("country_code"),
             data.get("epc", 0),
             data["raw_hash"],
@@ -243,12 +250,16 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
         _execute_write(conn, sql, params)
     else:
         sql = f"""INSERT INTO advertisers
-                  (network, network_advertiser_id, name, website_url, category, country_code, epc, raw_hash, last_synced_at)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
+                  (network, network_advertiser_id, name, website_url, category,
+                   description, logo_url, network_rank, country_code, epc, raw_hash, last_synced_at)
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now})
                   ON DUPLICATE KEY UPDATE
                       name = VALUES(name),
                       website_url = VALUES(website_url),
                       category = VALUES(category),
+                      description = VALUES(description),
+                      logo_url = VALUES(logo_url),
+                      network_rank = VALUES(network_rank),
                       country_code = VALUES(country_code),
                       epc = VALUES(epc),
                       raw_hash = VALUES(raw_hash),
@@ -260,6 +271,9 @@ def upsert_advertiser(conn, data: dict) -> tuple[int, bool]:
             data["name"],
             data.get("website_url"),
             data.get("category"),
+            data.get("description"),
+            data.get("logo_url"),
+            data.get("network_rank"),
             data.get("country_code"),
             data.get("epc", 0),
             data["raw_hash"],
@@ -315,6 +329,7 @@ def upsert_ad(conn, data: dict) -> tuple[int, bool]:
         data.get("status", "active"),
         data.get("epc", 0),
         data["raw_hash"],
+        data.get("ad_content"),
         data["advert_name"],
         data["bannercode"],
         data.get("imagetype", ""),
@@ -345,13 +360,13 @@ def upsert_ad(conn, data: dict) -> tuple[int, bool]:
     if _use_sqlite:
         sql = f"""INSERT INTO ads
                   (network, network_ad_id, advertiser_id, creative_type, tracking_url,
-                   destination_url, status, epc, raw_hash, last_synced_at,
+                   destination_url, status, epc, raw_hash, ad_content, last_synced_at,
                    advert_name, bannercode, imagetype, image_url, width, height,
                    campaign_name, enable_stats, show_everyone, show_desktop, show_mobile,
                    show_tablet, show_ios, show_android, autodelete, autodisable,
                    budget, click_rate, impression_rate, state_required,
                    geo_cities, geo_states, geo_countries, schedule_start, schedule_end)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now},
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now},
                           {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p},
                           {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p},
                           {p}, {p}, {p}, {p}, {p})
@@ -363,6 +378,7 @@ def upsert_ad(conn, data: dict) -> tuple[int, bool]:
                       status = excluded.status,
                       epc = excluded.epc,
                       raw_hash = excluded.raw_hash,
+                      ad_content = excluded.ad_content,
                       last_synced_at = {now},
                       advert_name = excluded.advert_name,
                       bannercode = excluded.bannercode,
@@ -393,13 +409,13 @@ def upsert_ad(conn, data: dict) -> tuple[int, bool]:
     else:
         sql = f"""INSERT INTO ads
                   (network, network_ad_id, advertiser_id, creative_type, tracking_url,
-                   destination_url, status, epc, raw_hash, last_synced_at,
+                   destination_url, status, epc, raw_hash, ad_content, last_synced_at,
                    advert_name, bannercode, imagetype, image_url, width, height,
                    campaign_name, enable_stats, show_everyone, show_desktop, show_mobile,
                    show_tablet, show_ios, show_android, autodelete, autodisable,
                    budget, click_rate, impression_rate, state_required,
                    geo_cities, geo_states, geo_countries, schedule_start, schedule_end)
-                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now},
+                  VALUES ({p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {now},
                           {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p},
                           {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p}, {p},
                           {p}, {p}, {p}, {p}, {p})
@@ -411,6 +427,7 @@ def upsert_ad(conn, data: dict) -> tuple[int, bool]:
                       status = VALUES(status),
                       epc = VALUES(epc),
                       raw_hash = VALUES(raw_hash),
+                      ad_content = VALUES(ad_content),
                       last_synced_at = {now},
                       advert_name = VALUES(advert_name),
                       bannercode = VALUES(bannercode),

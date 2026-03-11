@@ -281,6 +281,13 @@ class ImpactClient(NetworkClient):
 
             seen_advertiser_ids: set[str] = set()
 
+            # Filter to only Active campaigns (approved advertisers)
+            raw_campaigns = [
+                c for c in raw_campaigns
+                if c.get("ContractStatus", "") == "Active"
+            ]
+            logger.info(f"[impact] {len(raw_campaigns)} campaigns with Active status")
+
             # Process each campaign and its ads
             for raw_camp in raw_campaigns:
                 try:
@@ -294,6 +301,9 @@ class ImpactClient(NetworkClient):
                         "name": adv_data["network_program_name"],
                         "website_url": adv_data.get("website_url"),
                         "category": adv_data.get("category"),
+                        "description": adv_data.get("description"),
+                        "logo_url": adv_data.get("logo_url"),
+                        "network_rank": adv_data.get("network_rank"),
                         "country_code": adv_data.get("country_code"),
                         "epc": adv_data.get("epc", 0),
                         "raw_hash": adv_data["raw_hash"],
@@ -341,6 +351,7 @@ class ImpactClient(NetworkClient):
                                 "status": ad_data.get("status", "active"),
                                 "epc": ad_data.get("epc", 0),
                                 "raw_hash": ad_data["raw_hash"],
+                                "ad_content": ad_data.get("ad_content"),
                                 "advert_name": ad_data["advert_name"],
                                 "bannercode": ad_data["bannercode"],
                                 "imagetype": ad_data.get("imagetype", ""),

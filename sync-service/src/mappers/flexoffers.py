@@ -2,7 +2,7 @@
 
 import re
 
-from .base import Mapper
+from .base import Mapper, parse_date_to_unix
 
 
 class FlexOffersMapper(Mapper):
@@ -33,6 +33,9 @@ class FlexOffersMapper(Mapper):
             "status": "active" if is_active else "paused",
             "website_url": raw.get("domainUrl", ""),
             "category": raw.get("categoryNames", ""),
+            "description": raw.get("description", ""),
+            "logo_url": raw.get("imageUrl", ""),
+            "network_rank": float(raw.get("networkRank") or 0) or None,
             "country_code": "GB" if raw.get("country") == "UK" else raw.get("country", "US"),
             "epc": float(raw.get("sevenDayEpc") or 0),
             "raw_hash": Mapper.compute_hash(raw),
@@ -94,6 +97,7 @@ class FlexOffersMapper(Mapper):
             "raw_hash": Mapper.compute_hash(raw),
             "name": link_name,
             "raw_data": raw,
+            "ad_content": raw.get("linkDescription", ""),
 
             # AdRotate fields
             "advert_name": advert_name,
@@ -128,9 +132,9 @@ class FlexOffersMapper(Mapper):
             "geo_states": "a:0:{}",
             "geo_countries": "a:0:{}",
 
-            # Schedule (no start, far future end)
-            "schedule_start": 0,
-            "schedule_end": 2650941780,
+            # Schedule: use real dates if available
+            "schedule_start": parse_date_to_unix(raw.get("startDate"), 0),
+            "schedule_end": parse_date_to_unix(raw.get("endDate"), 2650941780),
         }
 
     def _sanitize_name(self, name: str) -> str:

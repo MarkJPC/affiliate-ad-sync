@@ -6,6 +6,7 @@ use App\Models\Ad;
 use App\Models\Advertiser;
 use App\Models\GeoRegion;
 use App\Models\Placement;
+use App\Models\Site;
 use App\Services\GeoService;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Url;
@@ -26,7 +27,7 @@ class AdGrid extends Component
     public string $creativeType = '';
 
     #[Url(as: 'approval_status')]
-    public string $approvalStatus = '';
+    public string $approvalStatus = 'approved';
 
     #[Url(as: 'advertiser_id')]
     public string $advertiserId = '';
@@ -51,6 +52,9 @@ class AdGrid extends Component
 
     #[Url(as: 'placement_sizes')]
     public string $placementSizesOnly = '1';
+
+    #[Url]
+    public string $site = '';
 
     #[Url(as: 'sort')]
     public string $sortField = 'last_synced_at';
@@ -124,6 +128,11 @@ class AdGrid extends Component
         $this->resetPage();
     }
 
+    public function updatedSite(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedPerPage(): void
     {
         $this->resetPage();
@@ -145,7 +154,7 @@ class AdGrid extends Component
         $this->reset([
             'search', 'network', 'creativeType', 'approvalStatus',
             'advertiserId', 'dimensions', 'advertiserStatus',
-            'country', 'region',
+            'country', 'region', 'site',
             'hasImage', 'needsAttention', 'placementSizesOnly',
         ]);
         $this->hasImage = '1';
@@ -176,8 +185,12 @@ class AdGrid extends Component
         $perPage = in_array($this->perPage, [24, 48, 96]) ? $this->perPage : 24;
         $ads = $query->paginate($perPage);
 
-        $dimensionsList = $this->getCachedDimensions();
+        // When "Active sizes only" is checked, show only active placement sizes in dropdown
+        $dimensionsList = $this->placementSizesOnly === '1' && $activeSizeStrings->isNotEmpty()
+            ? $activeSizeStrings->sort()->values()
+            : $this->getCachedDimensions();
         $advertisers = $this->getCachedAdvertisers();
+        $sites = Site::where('is_active', 1)->orderBy('name')->get(['id', 'name', 'domain']);
 
         // Needs attention count
         $needsAttentionQuery = Ad::query();
@@ -209,6 +222,11 @@ class AdGrid extends Component
                 'weight_override' => $ad->weight_override,
                 'advertiser_name' => $ad->advertiser?->name ?? 'Unknown',
                 'advertiser_weight' => $ad->advertiser?->default_weight,
+                'advertiser_description' => $ad->advertiser?->description,
+                'advertiser_logo_url' => $ad->advertiser?->logo_url,
+                'advertiser_network_rank' => $ad->advertiser?->network_rank,
+                'advertiser_website_url' => $ad->advertiser?->website_url,
+                'advertiser_category' => $ad->advertiser?->category,
                 'geo_region' => GeoService::getRegionName($ad->advertiser?->country_code),
                 'last_synced_at' => $ad->last_synced_at,
             ]
@@ -230,7 +248,8 @@ class AdGrid extends Component
             || $this->dimensions !== ''
             || $this->advertiserStatus !== ''
             || $this->country !== ''
-            || $this->region !== '';
+            || $this->region !== ''
+            || $this->site !== '';
 
         return view('livewire.ad-grid', compact(
             'ads',
@@ -238,6 +257,7 @@ class AdGrid extends Component
             'advertisers',
             'countryList',
             'geoRegions',
+            'sites',
             'needsAttentionCount',
             'totalMatching',
             'adsJson',
@@ -318,6 +338,12 @@ class AdGrid extends Component
                 $codes = array_map('trim', explode(',', $regionRow->country_codes));
                 $query->whereHas('advertiser', fn ($q) => $q->whereIn('country_code', $codes));
             }
+        }
+
+        // Filter by site: show only ads from advertisers allowed on the selected site
+        if ($this->site !== '') {
+            $siteId = (int) $this->site;
+            $query->whereHas('advertiser.siteRules', fn ($q) => $q->where('site_id', $siteId)->where('rule', 'allowed'));
         }
 
         if ($this->hasImage === '1') {
