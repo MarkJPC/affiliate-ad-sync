@@ -85,6 +85,16 @@
                     class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 pl-3 pr-2 text-gray-900 placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white dark:placeholder-gray-500">
             </div>
 
+            {{-- Website --}}
+            <div class="w-[140px]">
+                <select wire:model.live="site" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
+                    <option value="">Website</option>
+                    @foreach($sites as $s)
+                        <option value="{{ $s->id }}">{{ $s->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             {{-- Network --}}
             <div class="w-[100px]">
                 <select wire:model.live="network" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
@@ -109,6 +119,7 @@
             <div class="w-[100px]">
                 <select wire:model.live="approvalStatus" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
                     <option value="">Approval</option>
+                    <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="denied">Denied</option>
                 </select>
@@ -119,7 +130,7 @@
                 <select wire:model.live="dimensions" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
                     <option value="">Dimensions</option>
                     @foreach($dimensionsList as $dim)
-                        <option value="{{ $dim }}">{{ $dim }}{{ $activeSizeStrings->contains($dim) ? ' (active)' : '' }}</option>
+                        <option value="{{ $dim }}">{{ $dim }}</option>
                     @endforeach
                 </select>
             </div>
@@ -289,6 +300,12 @@
                 <button wire:click="$set('region', '')" class="ml-0.5 hover:text-cyan-900 dark:hover:text-white">&times;</button>
             </span>
         @endif
+        @if($this->site !== '')
+            <span class="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-0.5 text-[0.65rem] font-medium text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">
+                Site: {{ $sites->firstWhere('id', (int) $this->site)?->name ?? $this->site }}
+                <button wire:click="$set('site', '')" class="ml-0.5 hover:text-cyan-900 dark:hover:text-white">&times;</button>
+            </span>
+        @endif
         @if($this->hasImage !== '1')
             <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[0.65rem] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 All (incl. no image)
@@ -355,6 +372,7 @@
     {{-- Modals --}}
     @include('ads.partials.deny-reason-modal')
     @include('ads.partials.detail-modal')
+    @include('ads.partials.advertiser-popup')
 
     {{-- Toast notification --}}
     <div x-show="toast.show" x-transition:enter="transition ease-out duration-300"

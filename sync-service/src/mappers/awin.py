@@ -8,7 +8,7 @@ Maps two types of raw dicts to canonical ad schema:
 
 import re
 
-from .base import Mapper
+from .base import Mapper, parse_date_to_unix
 
 
 class AwinMapper(Mapper):
@@ -41,6 +41,9 @@ class AwinMapper(Mapper):
             # Best-effort fields (safe defaults if missing)
             "website_url": raw.get("displayUrl") or raw.get("programmeUrl") or raw.get("url") or "",
             "category": raw.get("primarySector") or raw.get("sector") or "",
+            "description": raw.get("description") or "",
+            "logo_url": raw.get("logoUrl") or "",
+            "network_rank": None,  # Awin doesn't provide network rank
             "country_code": country_code,
             # EPC usually not present in programmes response; keep consistent type
             "epc": float(raw.get("epc") or raw.get("sevenDayEpc") or 0),
@@ -121,6 +124,9 @@ class AwinMapper(Mapper):
             width=width,
             height=height,
             raw=raw,
+            ad_content=raw.get("description") or "",
+            schedule_start=parse_date_to_unix(raw.get("startDate"), 0),
+            schedule_end=parse_date_to_unix(raw.get("endDate"), 2650941780),
         )
 
     def _map_creative(self, raw: dict, advertiser_id: int) -> dict:
@@ -183,6 +189,9 @@ class AwinMapper(Mapper):
         width: int,
         height: int,
         raw: dict,
+        ad_content: str = "",
+        schedule_start: int = 0,
+        schedule_end: int = 2650941780,
     ) -> dict:
         """Build the canonical ad dict with all AdRotate fields."""
         return {
@@ -199,6 +208,7 @@ class AwinMapper(Mapper):
             "raw_hash": Mapper.compute_hash(raw),
             "name": name,
             "raw_data": raw,
+            "ad_content": ad_content,
 
             # AdRotate fields
             "advert_name": advert_name,
@@ -233,9 +243,9 @@ class AwinMapper(Mapper):
             "geo_states": "a:0:{}",
             "geo_countries": "a:0:{}",
 
-            # Schedule (no start, far future end)
-            "schedule_start": 0,
-            "schedule_end": 2650941780,
+            # Schedule: use real dates if available
+            "schedule_start": schedule_start,
+            "schedule_end": schedule_end,
         }
 
     def _construct_bannercode(self, tracking_url: str, image_url: str) -> str:

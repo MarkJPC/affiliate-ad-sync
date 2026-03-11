@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ad;
 use App\Models\Advertiser;
 use App\Models\GeoRegion;
 use App\Models\Site;
@@ -166,6 +167,13 @@ class AdvertiserController extends Controller
             ['rule' => $validated['rule'], 'reason' => $validated['reason'] ?? null],
         );
 
+        // Cascade: when advertiser is approved, promote their pending ads
+        if ($validated['rule'] === 'allowed') {
+            Ad::where('advertiser_id', $advertiser->id)
+                ->where('approval_status', 'pending')
+                ->update(['approval_status' => 'approved']);
+        }
+
         return response()->json(['success' => true, 'rule' => $siteRule]);
     }
 
@@ -222,6 +230,13 @@ class AdvertiserController extends Controller
                 ['rule' => $validated['rule'], 'reason' => $validated['reason'] ?? null],
             );
             $count++;
+        }
+
+        // Cascade: when advertisers are approved, promote their pending ads
+        if ($validated['rule'] === 'allowed') {
+            Ad::whereIn('advertiser_id', $ids)
+                ->where('approval_status', 'pending')
+                ->update(['approval_status' => 'approved']);
         }
 
         return response()->json(['success' => true, 'count' => $count]);

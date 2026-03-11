@@ -2,7 +2,7 @@
 
 import re
 
-from .base import Mapper
+from .base import Mapper, parse_date_to_unix
 
 # Impact ShippingRegions returns full country names; normalize to ISO codes
 _IMPACT_COUNTRY_MAP = {
@@ -68,6 +68,9 @@ class ImpactMapper(Mapper):
             "status": "active" if is_active else "paused",
             "website_url": raw.get("CampaignUrl", ""),
             "category": "",  # Impact doesn't provide category in campaign response
+            "description": raw.get("CampaignDescription", ""),
+            "logo_url": raw.get("CampaignLogoUri", ""),
+            "network_rank": None,  # Impact doesn't provide network rank
             "country_code": country_code,
             "epc": 0,
             "raw_hash": Mapper.compute_hash(raw),
@@ -128,6 +131,7 @@ class ImpactMapper(Mapper):
             "epc": 0,  # EPC comes from separate reporting endpoint
             "raw_hash": Mapper.compute_hash(raw),
             "name": ad_name,
+            "ad_content": raw.get("Description", ""),
 
             # AdRotate fields
             "advert_name": advert_name,
@@ -162,9 +166,9 @@ class ImpactMapper(Mapper):
             "geo_states": "a:0:{}",
             "geo_countries": "a:0:{}",
 
-            # Schedule (no start, far future end)
-            "schedule_start": 0,
-            "schedule_end": 2650941780,
+            # Schedule: use real dates if available
+            "schedule_start": parse_date_to_unix(raw.get("StartDate"), 0),
+            "schedule_end": parse_date_to_unix(raw.get("EndDate"), 2650941780),
         }
 
     def _sanitize_name(self, name: str) -> str:

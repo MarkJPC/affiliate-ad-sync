@@ -57,6 +57,9 @@ CREATE TABLE advertisers (
     name                    VARCHAR(255)    NOT NULL,
     website_url             VARCHAR(500)    NULL,
     category                VARCHAR(255)    NULL,
+    description             TEXT            NULL        COMMENT 'Advertiser/program description from network',
+    logo_url                VARCHAR(2000)   NULL        COMMENT 'Advertiser logo image URL',
+    network_rank            DECIMAL(6,2)    NULL        COMMENT 'Network-reported ranking/quality score',
 
     -- Performance metrics (network-reported, updated each sync)
     total_clicks            INT             NOT NULL DEFAULT 0,
@@ -126,9 +129,9 @@ CREATE TABLE ads (
     revenue             DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
     epc                 DECIMAL(8,4)    NOT NULL DEFAULT 0.0000,
 
-    -- Approval: GLOBAL (not per-site). Ads default to approved.
-    -- Richard only denies bad images/creatives. Denied = permanent unless re-approved.
-    approval_status     ENUM('approved', 'denied') NOT NULL DEFAULT 'approved',
+    -- Approval: GLOBAL (not per-site). New ads start as pending.
+    -- Promoted to 'approved' when their advertiser is allowed on any site.
+    approval_status     ENUM('approved', 'pending', 'denied') NOT NULL DEFAULT 'pending',
     approval_reason     VARCHAR(500)    NULL        COMMENT 'Why this ad was denied',
 
     -- Weight override: if set, this takes priority over the advertiser default_weight.
@@ -138,6 +141,9 @@ CREATE TABLE ads (
     -- Sync tracking
     last_synced_at      TIMESTAMP       NULL,
     raw_hash            VARCHAR(64)     NULL        COMMENT 'SHA-256 of raw API response for change detection',
+
+    -- Ad content: promotional copy / anchor text for text ad exports
+    ad_content          TEXT            NULL        COMMENT 'Promotional copy from network (CJ ad-content, etc.)',
 
     -- === ADROTATE FIELDS (exported directly to CSV) ===
     -- These map 1:1 to AdRotate CSV columns.
@@ -351,8 +357,8 @@ WHERE
     sar.rule = 'allowed'
     -- Advertiser must be active (not soft-deleted)
     AND adv.is_active = TRUE
-    -- Step 3: Ad must be approved (not denied)
-    AND a.approval_status = 'approved'
+    -- Step 3: Ad must not be denied (pending + approved both export)
+    AND a.approval_status != 'denied'
     -- Ad must be active in the network
     AND a.status = 'active';
     -- Step 2 (placement matching) is applied in the application query

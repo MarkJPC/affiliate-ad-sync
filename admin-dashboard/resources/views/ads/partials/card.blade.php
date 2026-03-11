@@ -79,7 +79,8 @@
         {{-- Medium/Large only: extra metadata --}}
         <template x-if="viewSize !== 'small'">
             <div>
-                <p class="mt-0.5 text-[0.65rem] text-gray-500 dark:text-gray-400 line-clamp-1">{{ $ad->advertiser?->name ?? 'Unknown' }}</p>
+                <p class="mt-0.5 text-[0.65rem] text-gray-500 dark:text-gray-400 line-clamp-1 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400"
+                    x-on:click.stop="openAdvertiserPopup({{ $ad->id }})">{{ $ad->advertiser?->name ?? 'Unknown' }}</p>
                 <div class="mt-1 flex items-center gap-1 text-[0.65rem] text-gray-400 dark:text-gray-500">
                     @if($ad->width && $ad->height)
                         <span class="font-mono">{{ $ad->width }}&times;{{ $ad->height }}</span>
