@@ -363,7 +363,7 @@ class ExportEngineService
 
         return array_merge($row, [
             'advert_name' => $advertName,
-            'bannercode' => $bannercode,
+            'bannercode' => $this->normalizeBannercode($bannercode),
             'image_url' => $imageUrl,
             'width' => $width,
             'height' => $height,
@@ -388,6 +388,22 @@ class ExportEngineService
             'schedule_start' => $scheduleStart,
             'schedule_end' => $scheduleEnd,
         ]);
+    }
+
+    private function normalizeBannercode(string $html): string
+    {
+        // Strip alt="..." and title="..." from <a> tags (invalid HTML on anchors)
+        $html = preg_replace('/\s+(alt|title)="[^"]*"/', '', $html);
+
+        // Ensure rel="sponsored" on <a> tags
+        if (str_contains($html, '<a ') && !str_contains($html, 'rel="sponsored"')) {
+            $html = preg_replace('/<a\s/', '<a rel="sponsored" ', $html);
+        }
+
+        // HTML-encode the entire string for AdRotate import
+        $html = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
+
+        return $html;
     }
 
     private function normalizeYn(mixed $value, string $default): string
