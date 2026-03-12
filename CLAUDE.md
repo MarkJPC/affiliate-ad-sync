@@ -130,11 +130,10 @@ Schema files (see `database/`):
 | Table | Description |
 |-------|-------------|
 | `advertisers` | Affiliate programs from all networks |
-| `ads` | Canonical ad records with AdRotate fields |
+| `ads` | Canonical ad records with AdRotate fields; global `approval_status` (approved/denied) |
 | `sites` | WordPress sites we manage |
 | `placements` | Ad slots with dimensions per site |
 | `site_advertiser_rules` | Allow/deny advertisers per site |
-| `site_ads` | Per-site ad approval status (many-to-many) |
 | `sync_logs` | Audit trail for sync operations |
 | `export_logs` | Audit trail for CSV exports |
 

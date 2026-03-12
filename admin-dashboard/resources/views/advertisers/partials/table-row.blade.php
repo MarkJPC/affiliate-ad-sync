@@ -2,7 +2,7 @@
     $isDuplicate = in_array(\Illuminate\Support\Str::lower($advertiser->name), $duplicateNames);
     $isInactive = !$advertiser->is_active;
 @endphp
-<tr class="{{ $isInactive ? 'opacity-50' : '' }} {{ $isDuplicate ? 'bg-amber-50/50 dark:bg-amber-900/10' : '' }} border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+<tr wire:key="adv-{{ $advertiser->id }}" class="{{ $isInactive ? 'opacity-50' : '' }} {{ $isDuplicate ? 'bg-amber-50/50 dark:bg-amber-900/10' : '' }} border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
     :class="{ 'bg-blue-50 dark:bg-blue-900/20': selected.includes({{ $advertiser->id }}) }">
 
     {{-- Checkbox --}}
@@ -101,21 +101,11 @@
                 :class="getRuleCellClass({{ $advertiser->id }}, {{ $site->id }})"
                 :disabled="!isEligible({{ $advertiser->id }}, {{ $site->id }})"
                 :title="!isEligible({{ $advertiser->id }}, {{ $site->id }}) ? 'Not available — this network doesn\'t serve this site' : ''">
-                <template x-if="!isEligible({{ $advertiser->id }}, {{ $site->id }})">
-                    <svg class="h-3 w-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                </template>
-                <template x-if="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'allowed'">
-                    <svg class="h-3.5 w-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                </template>
-                <template x-if="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'denied'">
-                    <svg class="h-3.5 w-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </template>
-                <template x-if="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'default'">
-                    <svg class="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </template>
-                <template x-if="isEligible({{ $advertiser->id }}, {{ $site->id }}) && !getRuleValue({{ $advertiser->id }}, {{ $site->id }})">
-                    <span class="text-xs text-gray-400">---</span>
-                </template>
+                <svg x-show="!isEligible({{ $advertiser->id }}, {{ $site->id }})" class="h-3 w-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <svg x-show="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'allowed'" class="h-3.5 w-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <svg x-show="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'denied'" class="h-3.5 w-3.5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <svg x-show="isEligible({{ $advertiser->id }}, {{ $site->id }}) && getRuleValue({{ $advertiser->id }}, {{ $site->id }}) === 'default'" class="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span x-show="isEligible({{ $advertiser->id }}, {{ $site->id }}) && !getRuleValue({{ $advertiser->id }}, {{ $site->id }})" class="text-xs text-gray-400">---</span>
             </button>
         </td>
     @endforeach

@@ -170,6 +170,13 @@ class AwinClient(NetworkClient):
                 logger.debug(f"Advertiser {advertiser_id} creatives page {page}: no content (204)")
                 break
 
+            if response.status_code == 404:
+                logger.debug(
+                    f"Advertiser {advertiser_id} creatives: endpoint returned 404 "
+                    f"(creatives API may not be available)"
+                )
+                return creatives  # return empty list
+
             if response.status_code == 401:
                 raise httpx.HTTPStatusError(
                     "Awin unauthorized (check API token / permissions)",

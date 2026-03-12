@@ -36,16 +36,16 @@ cd "/Users/ragpatel/affiliate-ad-sync/affiliate-ad-sync/admin-dashboard" && php 
 
 4. Validate CSV headers exactly match expected AdRotate order:
 
-`advert_name,bannercode,imagetype,image_url,width,height,campaign_name,enable_stats,show_everyone,show_desktop,show_mobile,show_tablet,show_ios,show_android,weight,autodelete,autodisable,budget,click_rate,impression_rate,state_required,geo_cities,geo_states,geo_countries,schedule_start,schedule_end`
+`id,advert_name,bannercode,imagetype,image_url,enable_stats,show_everyone,show_desktop,show_mobile,show_tablet,show_ios,show_android,weight,autodelete,autodisable,budget,click_rate,impression_rate,state_required,geo_cities,geo_states,geo_countries,schedule_start,schedule_end`
 
 5. Validate row quality:
 
-- `width`/`height` are positive.
 - `weight` is positive.
-- `imagetype` is set.
+- `imagetype` is empty for affiliate ads (only set for uploaded images in AdRotate).
 - `enable_stats` and other flags are strict `Y`/`N`.
 - `schedule_end` is greater than `schedule_start`.
 - `geo_*` fields are present.
+- `id` is empty for new ads (AdRotate assigns on import).
 
 6. Placement strictness check:
 

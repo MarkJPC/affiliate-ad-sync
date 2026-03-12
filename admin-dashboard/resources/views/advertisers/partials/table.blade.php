@@ -62,7 +62,7 @@
                         $groupCount = $advertisers->getCollection()->filter(fn ($a) => \Illuminate\Support\Str::lower($a->name) === $lowerName)->count();
                         $lastDuplicateGroup = $lowerName;
                     @endphp
-                    <tr class="border-b bg-amber-50 dark:border-gray-700 dark:bg-amber-900/20">
+                    <tr wire:key="group-{{ $lowerName }}" class="border-b bg-amber-50 dark:border-gray-700 dark:bg-amber-900/20">
                         <td colspan="{{ 7 + $sites->count() }}" class="px-2 py-1">
                             <span class="text-xs font-semibold text-amber-700 dark:text-amber-400">
                                 Duplicate: {{ $advertiser->name }} ({{ $groupCount }} networks)

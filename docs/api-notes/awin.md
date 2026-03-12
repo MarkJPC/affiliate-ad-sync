@@ -36,6 +36,6 @@ TODO: Document actual response structure
 
 ## Notes
 
-- TODO: Add rate limiting info
-- TODO: Add pagination handling
-- TODO: Document any quirks or edge cases
+- **Creatives endpoint returns 404** (as of 2026-03-12): The `GET /publishers/{publisherId}/advertisers/{advertiserId}/creatives` endpoint returns 404 for all joined advertisers. Awin's Publisher API does not appear to offer a programmatic endpoint for banner creatives — banners are only available through the Awin UI dashboard. All Awin ads currently come from the promotions endpoint as text/voucher types.
+- Rate limiting: 403 responses with exponential backoff retry (up to 3 attempts)
+- Pagination: promotions use POST with `pagination.page`/`pagination.pageSize` (max 200)
