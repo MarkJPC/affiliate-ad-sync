@@ -83,6 +83,7 @@ jobs:
           DB_DATABASE: ${{ secrets.MYSQL_DATABASE }}
           DB_USERNAME: ${{ secrets.MYSQL_USER }}
           DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          APP_GH_PAT_TOKEN: ${{ secrets.APP_GH_PAT_TOKEN }}
         run: |
           {
             echo 'APP_NAME="Affiliate Ad Admin"'
@@ -98,6 +99,8 @@ jobs:
             echo "DB_PASSWORD=${DB_PASSWORD}"
             echo "SESSION_DRIVER=file"
             echo "CACHE_STORE=file"
+            echo "GITHUB_TOKEN=${APP_GH_PAT_TOKEN}"
+            echo "GITHUB_REPO=MarkJPC/affiliate-ad-sync"
           } > deploy/app-core/.env
 
       - name: Deploy via FTPS

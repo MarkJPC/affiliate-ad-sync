@@ -42,6 +42,7 @@ cd "/Users/ragpatel/affiliate-ad-sync/affiliate-ad-sync/admin-dashboard" && php 
 
 - `weight` is positive.
 - `imagetype` is empty for affiliate ads (only set for uploaded images in AdRotate).
+- `image_url` is empty for affiliate ads (AdRotate only uses this for locally-uploaded images; remote URLs are embedded in `bannercode`).
 - `enable_stats` and other flags are strict `Y`/`N`.
 - `schedule_end` is greater than `schedule_start`.
 - `geo_*` fields are present.

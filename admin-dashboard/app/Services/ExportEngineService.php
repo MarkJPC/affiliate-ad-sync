@@ -355,6 +355,12 @@ class ExportEngineService
             $imagetype = '';
         }
 
+        // AdRotate image_url is only for locally-uploaded images (imagetype = 'dropdown').
+        // For affiliate ads, the image URL is embedded in bannercode — clear it.
+        if ($imagetype === '') {
+            $imageUrl = '';
+        }
+
         return array_merge($row, [
             'advert_name' => $advertName,
             'bannercode' => $bannercode,
