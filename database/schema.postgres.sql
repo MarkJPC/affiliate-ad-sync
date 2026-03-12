@@ -26,7 +26,7 @@ CREATE TYPE creative_type AS ENUM ('banner', 'text', 'html');
 CREATE TYPE ad_status AS ENUM ('active', 'paused', 'expired');
 
 -- Approval status for the admin workflow
-CREATE TYPE approval_status AS ENUM ('pending', 'approved', 'denied');
+CREATE TYPE approval_status AS ENUM ('approved', 'denied');
 
 -- Site-level advertiser rules
 CREATE TYPE advertiser_rule AS ENUM ('allowed', 'denied', 'default');
@@ -304,7 +304,7 @@ CREATE TABLE site_ads (
     ad_id UUID NOT NULL REFERENCES ads(id) ON DELETE CASCADE,
     
     -- Approval workflow
-    approval_status approval_status NOT NULL DEFAULT 'pending',
+    approval_status approval_status NOT NULL DEFAULT 'approved',
     approval_reason TEXT,
     deny_is_permanent BOOLEAN NOT NULL DEFAULT TRUE,
     

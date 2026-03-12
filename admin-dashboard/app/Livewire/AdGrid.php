@@ -27,7 +27,7 @@ class AdGrid extends Component
     public string $creativeType = '';
 
     #[Url(as: 'approval_status')]
-    public string $approvalStatus = 'approved';
+    public string $approvalStatus = '';
 
     #[Url(as: 'advertiser_id')]
     public string $advertiserId = '';
@@ -36,7 +36,7 @@ class AdGrid extends Component
     public string $dimensions = '';
 
     #[Url(as: 'advertiser_status')]
-    public string $advertiserStatus = '';
+    public string $advertiserStatus = 'allowed';
 
     #[Url]
     public string $country = '';
@@ -160,6 +160,7 @@ class AdGrid extends Component
         $this->hasImage = '1';
         $this->needsAttention = '1';
         $this->placementSizesOnly = '1';
+        $this->advertiserStatus = 'allowed';
         $this->resetPage();
     }
 
@@ -228,6 +229,8 @@ class AdGrid extends Component
                 'advertiser_website_url' => $ad->advertiser?->website_url,
                 'advertiser_category' => $ad->advertiser?->category,
                 'geo_region' => GeoService::getRegionName($ad->advertiser?->country_code),
+                'schedule_start' => $ad->schedule_start,
+                'schedule_end' => $ad->schedule_end,
                 'last_synced_at' => $ad->last_synced_at,
             ]
         ]);
@@ -246,7 +249,7 @@ class AdGrid extends Component
             || $this->approvalStatus !== ''
             || $this->advertiserId !== ''
             || $this->dimensions !== ''
-            || $this->advertiserStatus !== ''
+            || $this->advertiserStatus !== 'allowed'
             || $this->country !== ''
             || $this->region !== ''
             || $this->site !== '';

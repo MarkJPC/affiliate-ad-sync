@@ -171,30 +171,19 @@
 
                                 <td class="px-3 py-2 text-center">
                                     @if($placement)
-                                        <div class="flex flex-col items-center gap-1">
                                             <input
                                                 type="number"
+                                                placeholder="—"
                                                 :value="placements[{{ $placement->id }}]?.adrotate_group_id"
                                                 @change="updatePlacementGroup({{ $placement->id }}, $event.target.value)"
-                                                :class="dirtyPlacements[{{ $placement->id }}] ? 'ring-2 ring-cyan-400' : ''"
-                                                class="w-16 rounded border-gray-300 text-xs text-center dark:bg-gray-700 dark:text-white"
-                                            />
-                                            <button type="button"
-                                                @click="togglePlacementActive({{ $placement->id }})"
                                                 :class="[
-                                                    'plc-toggle',
-                                                    placements[{{ $placement->id }}]?.is_active ? 'plc-active' : 'plc-inactive',
-                                                    dirtyPlacements[{{ $placement->id }}] ? 'plc-dirty' : ''
+                                                    dirtyPlacements[{{ $placement->id }}] ? 'ring-2 ring-cyan-400' : '',
+                                                    placements[{{ $placement->id }}]?.adrotate_group_id
+                                                        ? 'border-solid border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-600'
+                                                        : 'border-dashed border-gray-300 bg-gray-50/80 dark:border-gray-600 dark:bg-gray-700/50'
                                                 ]"
-                                                :title="placements[{{ $placement->id }}]?.is_active ? 'Active' : 'Inactive'">
-                                                <template x-if="placements[{{ $placement->id }}]?.is_active">
-                                                    <svg class="h-3.5 w-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                                </template>
-                                                <template x-if="!placements[{{ $placement->id }}]?.is_active">
-                                                    <span class="text-[10px] text-gray-400">---</span>
-                                                </template>
-                                            </button>
-                                        </div>
+                                                class="w-16 rounded border text-xs text-center transition-colors focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:bg-white dark:text-white dark:focus:bg-gray-800"
+                                            />
                                     @else
                                         <span class="text-xs text-gray-400">—</span>
                                     @endif
@@ -231,12 +220,6 @@
                         <li class="px-3 py-2">
                             <div class="font-medium text-gray-900 dark:text-white" x-text="placementMeta[id] || ('Placement #' + id)"></div>
                             <div class="mt-0.5 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                <template x-if="originalPlacements[id]?.is_active !== placements[id]?.is_active">
-                                    <span>
-                                        Active: <span class="line-through" x-text="originalPlacements[id]?.is_active ? 'Yes' : 'No'"></span>
-                                        &rarr; <span class="font-medium text-cyan-600 dark:text-cyan-400" x-text="placements[id]?.is_active ? 'Yes' : 'No'"></span>
-                                    </span>
-                                </template>
                                 <template x-if="String(originalPlacements[id]?.adrotate_group_id ?? '') !== String(placements[id]?.adrotate_group_id ?? '')">
                                     <span>
                                         Group: <span class="line-through" x-text="originalPlacements[id]?.adrotate_group_id ?? '—'"></span>
@@ -635,14 +618,10 @@ function sitesManager() {
         },
 
         // --- Placements: dirty tracking ---
-        togglePlacementActive(id) {
-            this.placements[id].is_active = !this.placements[id].is_active;
-            this._checkPlacementDirty(id);
-        },
-
         updatePlacementGroup(id, value) {
             const parsed = value === '' ? null : parseInt(value);
             this.placements[id].adrotate_group_id = parsed;
+            this.placements[id].is_active = !!parsed;
             this._checkPlacementDirty(id);
         },
 
@@ -711,44 +690,5 @@ function sitesManager() {
     .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
     [x-cloak] { display: none !important; }
 
-    .plc-toggle {
-        width: 1.75rem; height: 1.75rem;
-        border-radius: 0.5rem;
-        display: inline-flex; align-items: center; justify-content: center;
-        transition: all 0.15s ease;
-        cursor: pointer;
-        border: none;
-    }
-    .plc-toggle:active { transform: scale(0.92); }
-
-    .plc-active {
-        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-        box-shadow: 0 0 0 1px rgba(34,197,94,0.2), inset 0 1px 0 rgba(255,255,255,0.5);
-    }
-    .dark .plc-active {
-        background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.25));
-        box-shadow: 0 0 0 1px rgba(34,197,94,0.3), 0 0 12px rgba(34,197,94,0.1);
-    }
-
-    .plc-inactive {
-        background: transparent;
-        box-shadow: 0 0 0 1px rgba(156,163,175,0.2);
-    }
-    .plc-inactive:hover {
-        background: rgba(156,163,175,0.08);
-        box-shadow: 0 0 0 1px rgba(156,163,175,0.4);
-    }
-    .dark .plc-inactive { box-shadow: 0 0 0 1px rgba(75,85,99,0.4); }
-    .dark .plc-inactive:hover { background: rgba(75,85,99,0.3); }
-
-    .plc-dirty {
-        outline: 2px solid #22d3ee;
-        outline-offset: 1px;
-        animation: plc-dirty-pulse 2s ease-in-out infinite;
-    }
-    @keyframes plc-dirty-pulse {
-        0%, 100% { outline-color: rgba(34,211,238,0.6); }
-        50% { outline-color: rgba(34,211,238,1); }
-    }
 </style>
 @endsection

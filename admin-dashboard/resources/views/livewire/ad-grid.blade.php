@@ -119,7 +119,6 @@
             <div class="w-[100px]">
                 <select wire:model.live="approvalStatus" class="adv-filter-input w-full border-gray-200 bg-gray-50 py-1 text-gray-900 focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white">
                     <option value="">Approval</option>
-                    <option value="pending">Pending</option>
                     <option value="approved">Approved</option>
                     <option value="denied">Denied</option>
                 </select>
@@ -332,42 +331,50 @@
         @include('ads.partials.bulk-action-bar')
     </div>
 
-    {{-- Grid or empty state --}}
-    @if($ads->isEmpty())
-        @include('ads.partials.empty-state')
-    @else
-        {{-- Grid wrapper with loading states --}}
-        <div class="relative">
-            {{-- Shimmer overlay during load --}}
-            <div wire:loading.delay.shortest class="absolute inset-0 z-10 grid gap-2 pointer-events-none"
-                :class="getGridClasses()">
-                @for($i = 0; $i < 12; $i++)
-                <div class="animate-pulse rounded-lg border border-gray-200/40 bg-white dark:border-gray-700/30 dark:bg-gray-800/60">
-                    <div class="px-2 pt-1.5 pb-1 flex justify-between">
-                        <div class="h-3 w-3 rounded bg-gray-200 dark:bg-gray-700"></div>
-                        <div class="h-3 w-10 rounded bg-gray-200 dark:bg-gray-700"></div>
+    {{-- Loading skeleton + dots --}}
+    <div wire:loading.delay.shortest class="relative min-h-[320px]">
+        {{-- Skeleton card grid --}}
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            @for($i = 0; $i < 8; $i++)
+                <div class="animate-pulse rounded-lg border border-gray-200/60 bg-white p-3 dark:border-gray-700/40 dark:bg-gray-800/80">
+                    <div class="mb-2 h-24 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="mb-1.5 h-3 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="mb-1.5 h-2.5 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="flex gap-2">
+                        <div class="h-2 w-10 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-2 w-8 rounded bg-gray-200 dark:bg-gray-700"></div>
                     </div>
-                    <div class="px-2"><div class="h-[100px] rounded bg-gray-100 dark:bg-gray-700/50"></div></div>
-                    <div class="px-2 py-2"><div class="h-3 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div></div>
                 </div>
-                @endfor
+            @endfor
+        </div>
+        {{-- Centered loading dots overlay --}}
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="rounded-xl bg-white/80 px-6 py-4 shadow-sm backdrop-blur-sm dark:bg-gray-800/80">
+                @include('components.loading-dots', ['text' => 'Loading ads...', 'size' => 'md'])
             </div>
+        </div>
+    </div>
 
+    {{-- Content — hidden during load --}}
+    <div wire:loading.remove>
+        @if($ads->isEmpty())
+            @include('ads.partials.empty-state')
+        @else
             {{-- Actual grid with staggered card entrance --}}
-            <div wire:loading.class="opacity-30 transition-opacity duration-200" class="grid gap-2" :class="getGridClasses()">
+            <div class="grid gap-2" :class="getGridClasses()">
                 @foreach($ads as $ad)
                     <div class="ad-card-enter" style="animation-delay: {{ $loop->index * 30 }}ms" wire:key="ad-{{ $ad->id }}">
                         @include('ads.partials.card', ['ad' => $ad])
                     </div>
                 @endforeach
             </div>
-        </div>
 
-        {{-- Pagination --}}
-        <div class="mt-3">
-            {{ $ads->links() }}
-        </div>
-    @endif
+            {{-- Pagination --}}
+            <div class="mt-3">
+                {{ $ads->links() }}
+            </div>
+        @endif
+    </div>
 
     {{-- Modals --}}
     @include('ads.partials.deny-reason-modal')

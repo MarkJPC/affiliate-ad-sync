@@ -53,6 +53,28 @@ class GeoService
     }
 
     /**
+     * Get the matching geo_region row for a country_code (id + name).
+     */
+    public static function getRegionForCountryCode(?string $countryCode): ?object
+    {
+        if (!$countryCode) {
+            return null;
+        }
+
+        $countryCode = strtoupper(trim($countryCode));
+        $regions = self::getRegions();
+
+        foreach ($regions as $region) {
+            $codes = array_map(fn ($c) => strtoupper(trim($c)), explode(',', $region->country_codes));
+            if (in_array($countryCode, $codes, true)) {
+                return (object) ['id' => $region->id, 'name' => $region->name];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Re-resolve geo_countries for all ads belonging to an advertiser.
      * Called after a country_code override.
      */

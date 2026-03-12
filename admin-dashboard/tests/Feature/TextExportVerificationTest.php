@@ -93,7 +93,7 @@ class TextExportVerificationTest extends TestCase
                 'network' => 'cj',
                 'creative_type' => 'text',
                 'status' => 'active',
-                'approval_status' => 'pending',
+                'approval_status' => 'approved',
                 'tracking_url' => 'https://example.com/e',
                 'bannercode' => '<a href="#">Pending</a>',
                 'weight_override' => null,

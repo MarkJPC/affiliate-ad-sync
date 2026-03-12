@@ -121,9 +121,9 @@ CREATE TABLE ads (
     revenue             REAL    NOT NULL DEFAULT 0.00,
     epc                 REAL    NOT NULL DEFAULT 0.0000,
 
-    -- Approval: GLOBAL (not per-site). New ads start as pending.
-    -- Promoted to 'approved' when their advertiser is allowed on any site.
-    approval_status     TEXT    NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('approved', 'pending', 'denied')),
+    -- Approval: GLOBAL (not per-site). New ads default to approved.
+    -- Only changed to 'denied' via explicit admin action.
+    approval_status     TEXT    NOT NULL DEFAULT 'approved' CHECK (approval_status IN ('approved', 'denied')),
     approval_reason     TEXT    NULL,
 
     -- Weight override: if set, takes priority over advertiser default_weight.

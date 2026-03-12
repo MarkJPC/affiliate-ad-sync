@@ -12,8 +12,29 @@
             document.documentElement.classList.add('dark');
         }
     </script>
+    <style>
+        @keyframes dot-bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .dark #page-loader { background: #111827; }
+    </style>
 </head>
 <body class="h-full bg-gray-50 dark:bg-gray-900">
+    {{-- Initial page load overlay --}}
+    <div id="page-loader" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f9fafb;transition:opacity .4s ease;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#06b6d4;animation:dot-bounce 1.4s infinite ease-in-out both;animation-delay:-0.32s;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#06b6d4;animation:dot-bounce 1.4s infinite ease-in-out both;animation-delay:-0.16s;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#06b6d4;animation:dot-bounce 1.4s infinite ease-in-out both;"></span>
+            </div>
+            <span style="font-size:13px;font-weight:500;color:#9ca3af;font-family:system-ui,sans-serif;">Loading...</span>
+        </div>
+    </div>
+
+    {{-- Page transition progress bar --}}
+    <div id="nav-progress" style="position:fixed;top:0;left:0;height:2px;z-index:60;opacity:0;width:0;background:linear-gradient(90deg,#06b6d4,#22d3ee,#06b6d4);background-size:200% 100%;transition:width 8s cubic-bezier(0.1,0.5,0.3,1),opacity .3s ease;"></div>
     @include('components.header')
     @include('components.sidebar')
 
@@ -36,5 +57,50 @@
         </div>
     </main>
     @livewireScripts
+    <script>
+        // Dismiss initial page loader
+        window.addEventListener('load', function() {
+            var loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(function() { loader.remove(); }, 400);
+            }
+        });
+
+        // Page transition progress bar
+        (function() {
+            var bar = document.getElementById('nav-progress');
+            if (!bar) return;
+
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('a[href]');
+                if (!link) return;
+                var href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) return;
+                if (link.target === '_blank' || link.hasAttribute('download')) return;
+                if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+                // Only internal links
+                try {
+                    var url = new URL(href, window.location.origin);
+                    if (url.origin !== window.location.origin) return;
+                } catch(err) { return; }
+
+                // Start progress bar
+                bar.style.transition = 'none';
+                bar.style.width = '0';
+                bar.style.opacity = '1';
+                // Force reflow
+                bar.offsetWidth;
+                bar.style.transition = 'width 8s cubic-bezier(0.1,0.5,0.3,1), opacity .3s ease';
+                bar.style.width = '90%';
+            });
+
+            window.addEventListener('beforeunload', function() {
+                bar.style.transition = 'width .2s ease, opacity .4s ease .2s';
+                bar.style.width = '100%';
+                bar.style.opacity = '0';
+            });
+        })();
+    </script>
 </body>
 </html>

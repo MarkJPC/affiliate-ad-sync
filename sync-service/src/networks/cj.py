@@ -252,6 +252,7 @@ class CJClient(NetworkClient):
             params = {
                 "website-id": self.website_id,
                 "advertiser-ids": advertiser_id,
+                "language": "en",
                 "page-number": page,
                 "records-per-page": page_size,
             }

@@ -2,159 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ad;
 use App\Models\Advertiser;
-use App\Models\GeoRegion;
 use App\Models\Site;
 use App\Models\SiteAdvertiserRule;
 use App\Services\GeoService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class AdvertiserController extends Controller
 {
-    public function index(Request $request)
-    {
-        $sites = Site::where('is_active', true)->orderBy('name')->get();
-        $siteIds = $sites->pluck('id');
-
-        $query = Advertiser::query()
-            ->withCount('ads')
-            ->with(['siteRules' => fn ($q) => $q->whereIn('site_id', $siteIds)]);
-
-        // Filters
-        if ($search = $request->input('search')) {
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        if ($network = $request->input('network')) {
-            $query->where('network', $network);
-        }
-
-        if ($category = $request->input('category')) {
-            $query->where('category', $category);
-        }
-
-        if ($request->filled('weight')) {
-            $weight = $request->input('weight');
-            if ($weight === 'unassigned') {
-                $query->whereNull('default_weight');
-            } else {
-                $query->where('default_weight', (int) $weight);
-            }
-        }
-
-        if ($request->filled('epc_min')) {
-            $query->where('epc', '>=', (float) $request->input('epc_min'));
-        }
-
-        if ($request->filled('epc_max')) {
-            $query->where('epc', '<=', (float) $request->input('epc_max'));
-        }
-
-        if ($request->filled('active')) {
-            $query->where('is_active', $request->input('active') === '1');
-        }
-
-        // Filter by rule status for a specific site
-        if ($rule = $request->input('rule')) {
-            $ruleSiteId = $request->input('rule_site');
-            if ($rule === 'default' && !$ruleSiteId) {
-                // "Pending" filter: advertisers with no rule or 'default' rule on any site
-                $query->where(function ($q) use ($siteIds) {
-                    $q->whereDoesntHave('siteRules', function ($sq) use ($siteIds) {
-                        $sq->whereIn('site_id', $siteIds)->whereIn('rule', ['allowed', 'denied']);
-                    });
-                });
-            } elseif ($ruleSiteId) {
-                $query->whereHas('siteRules', function ($q) use ($rule, $ruleSiteId) {
-                    $q->where('site_id', $ruleSiteId)->where('rule', $rule);
-                });
-            }
-        }
-
-        // Duplicates only filter
-        if ($request->boolean('duplicates_only')) {
-            $duplicateNamesList = Advertiser::select('name')
-                ->selectRaw('COUNT(DISTINCT network) as net_count')
-                ->groupBy('name')
-                ->havingRaw('COUNT(DISTINCT network) > 1')
-                ->pluck('name');
-            $query->whereIn('name', $duplicateNamesList);
-        }
-
-        // Country filter
-        if ($country = $request->input('country')) {
-            $query->where('country_code', $country);
-        }
-
-        // Region filter
-        if ($region = $request->input('region')) {
-            $regionRow = GeoRegion::where('name', $region)->first();
-            if ($regionRow) {
-                $codes = array_map('trim', explode(',', $regionRow->country_codes));
-                $query->whereIn('country_code', $codes);
-            }
-        }
-
-        // Sorting
-        $sortable = ['name', 'network', 'epc', 'commission_rate', 'default_weight', 'last_synced_at'];
-        $sort = in_array($request->input('sort'), $sortable) ? $request->input('sort') : 'name';
-        $dir = $request->input('dir') === 'desc' ? 'desc' : 'asc';
-        $query->orderBy($sort, $dir);
-
-        // Pagination
-        $perPage = in_array((int) $request->input('per_page'), [25, 50, 100]) ? (int) $request->input('per_page') : 25;
-        $advertisers = $query->paginate($perPage)->withQueryString();
-
-        // Post-process: group duplicates by lowercase name
-        $grouped = $advertisers->getCollection()->groupBy(fn ($a) => Str::lower($a->name));
-        $duplicateNames = $grouped->filter(fn ($group) => $group->count() > 1)->keys()->all();
-
-        // Index rules by site_id for each advertiser
-        $advertisers->getCollection()->each(function ($advertiser) {
-            $advertiser->rulesBySite = $advertiser->siteRules->keyBy('site_id');
-        });
-
-        // Compute region name per advertiser
-        $advertisers->getCollection()->each(function ($advertiser) {
-            $advertiser->region_name = GeoService::getRegionName($advertiser->country_code);
-        });
-
-        // Distinct categories for filter dropdown
-        $categories = Advertiser::whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
-
-        // Distinct country codes for filter dropdown
-        $countries = Advertiser::whereNotNull('country_code')
-            ->where('country_code', '!=', '')
-            ->distinct()
-            ->orderBy('country_code')
-            ->pluck('country_code');
-
-        // Geo regions for filter dropdown
-        $geoRegions = GeoRegion::orderBy('priority')->get();
-
-        // Total matching count (for "select all matching" in bulk)
-        $totalMatching = $advertisers->total();
-
-        return view('advertisers.index', compact(
-            'advertisers',
-            'sites',
-            'categories',
-            'countries',
-            'geoRegions',
-            'duplicateNames',
-            'totalMatching',
-            'sort',
-            'dir',
-            'perPage',
-        ));
-    }
-
     public function updateRule(Request $request, Advertiser $advertiser, Site $site)
     {
         $validated = $request->validate([
@@ -166,13 +21,6 @@ class AdvertiserController extends Controller
             ['site_id' => $site->id, 'advertiser_id' => $advertiser->id],
             ['rule' => $validated['rule'], 'reason' => $validated['reason'] ?? null],
         );
-
-        // Cascade: when advertiser is approved, promote their pending ads
-        if ($validated['rule'] === 'allowed') {
-            Ad::where('advertiser_id', $advertiser->id)
-                ->where('approval_status', 'pending')
-                ->update(['approval_status' => 'approved']);
-        }
 
         return response()->json(['success' => true, 'rule' => $siteRule]);
     }
@@ -232,13 +80,6 @@ class AdvertiserController extends Controller
             $count++;
         }
 
-        // Cascade: when advertisers are approved, promote their pending ads
-        if ($validated['rule'] === 'allowed') {
-            Ad::whereIn('advertiser_id', $ids)
-                ->where('approval_status', 'pending')
-                ->update(['approval_status' => 'approved']);
-        }
-
         return response()->json(['success' => true, 'count' => $count]);
     }
 
@@ -258,6 +99,30 @@ class AdvertiserController extends Controller
         ]);
 
         return response()->json(['success' => true, 'count' => $count]);
+    }
+
+    public function bulkRegion(Request $request)
+    {
+        $validated = $request->validate([
+            'advertiser_ids' => 'required_without:filter|array',
+            'advertiser_ids.*' => 'integer|exists:advertisers,id',
+            'filter' => 'nullable|array',
+            'country_code' => 'nullable|string|size:2|alpha',
+        ]);
+
+        $ids = $validated['advertiser_ids'] ?? $this->resolveFilterIds($request);
+        $code = isset($validated['country_code']) ? strtoupper($validated['country_code']) : null;
+
+        Advertiser::whereIn('id', $ids)->update(['country_code' => $code]);
+
+        foreach ($ids as $advertiserId) {
+            $advertiser = Advertiser::find($advertiserId);
+            if ($advertiser) {
+                GeoService::reResolveAdvertiserAds($advertiser);
+            }
+        }
+
+        return response()->json(['success' => true, 'count' => count($ids)]);
     }
 
     /**

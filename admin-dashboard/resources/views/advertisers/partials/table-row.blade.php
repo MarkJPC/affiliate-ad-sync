@@ -29,7 +29,10 @@
                 last_synced_at: '{{ $advertiser->last_synced_at ?? 'Never' }}',
                 is_active: {{ $advertiser->is_active ? 'true' : 'false' }},
                 country_code: '{{ $advertiser->country_code ?? '' }}',
-                region_name: '{{ addslashes($advertiser->region_name ?? '') }}'
+                region_name: '{{ addslashes($advertiser->region_name ?? '') }}',
+                description: '{{ addslashes(str_replace(["\r\n", "\r", "\n"], " ", $advertiser->description ?? "")) }}',
+                logo_url: '{{ addslashes($advertiser->logo_url ?? '') }}',
+                network_rank: '{{ $advertiser->network_rank ?? '' }}'
             })"
             class="text-left text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300">
             {{ $advertiser->name }}
@@ -57,33 +60,18 @@
     {{-- Commission rate --}}
     <td class="px-2 py-1 text-xs text-gray-700 dark:text-gray-300">{{ $advertiser->commission_rate ?? '---' }}</td>
 
-    {{-- Country (inline editable) --}}
+    {{-- Region dropdown --}}
     <td class="px-2 py-1">
-        <div x-data="{ editing: false, value: '{{ $advertiser->country_code ?? '' }}', saving: false }" class="inline-flex items-center gap-1">
-            <template x-if="!editing">
-                <button @click="editing = true; $nextTick(() => $refs.countryInput{{ $advertiser->id }}.focus())"
-                    class="inline-flex rounded px-1.5 py-0.5 font-mono text-[0.7rem] font-medium transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                    :class="value ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'"
-                    x-text="value || '---'"></button>
-            </template>
-            <template x-if="editing">
-                <div class="flex items-center gap-1">
-                    <input x-ref="countryInput{{ $advertiser->id }}" type="text" x-model="value" maxlength="2"
-                        @blur="editing = false; if (value !== '{{ $advertiser->country_code ?? '' }}') { saving = true; fetch('{{ route('api.advertisers.country-code.update', $advertiser) }}', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }, body: JSON.stringify({ country_code: value || null }) }).then(r => r.json()).then(d => { saving = false; if (d.region_name !== undefined) { $dispatch('country-updated', { id: {{ $advertiser->id }}, region: d.region_name }); } }).catch(() => { saving = false; }); }"
-                        @keydown.enter="$el.blur()"
-                        @keydown.escape="value = '{{ $advertiser->country_code ?? '' }}'; editing = false"
-                        class="w-10 rounded border-gray-300 px-1 py-0.5 font-mono text-[0.7rem] uppercase focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                    <svg x-show="saving" x-cloak class="h-3 w-3 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                </div>
-            </template>
-        </div>
-    </td>
-
-    {{-- Region (read-only) --}}
-    <td class="px-2 py-1"
-        x-data="{ region: '{{ addslashes($advertiser->region_name ?? '') }}' }"
-        @country-updated.window="if ($event.detail.id === {{ $advertiser->id }}) region = $event.detail.region || ''">
-        <span class="text-xs text-gray-500 dark:text-gray-400" x-text="region || '---'"></span>
+        <select
+            x-model="regions[{{ $advertiser->id }}]"
+            @change="markRegionDirty({{ $advertiser->id }})"
+            class="rounded-md border-gray-300 py-0.5 pl-1.5 pr-6 text-xs shadow-sm focus:border-cyan-500 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            :class="{ 'ring-2 ring-cyan-400': dirtyRegions[{{ $advertiser->id }}] }">
+            <option value="">---</option>
+            @foreach($geoRegions as $region)
+                <option value="{{ $region->id }}">{{ $region->name }}</option>
+            @endforeach
+        </select>
     </td>
 
     {{-- Weight dropdown --}}

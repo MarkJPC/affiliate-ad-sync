@@ -157,6 +157,7 @@ class PlacementController extends Controller
             'adrotate_group_id' => ['nullable', 'integer', 'min:0'],
         ]);
 
+        $data['is_active'] = !empty($data['adrotate_group_id']);
         $placement->update($data);
 
         return response()->json(['ok' => true, 'placement' => $placement]);
@@ -225,6 +226,7 @@ class PlacementController extends Controller
             }
             if (array_key_exists('adrotate_group_id', $change)) {
                 $update['adrotate_group_id'] = $change['adrotate_group_id'];
+                $update['is_active'] = !empty($change['adrotate_group_id']);
             }
             if (!empty($update)) {
                 $placement->update($update);

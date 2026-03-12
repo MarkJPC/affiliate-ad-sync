@@ -4,9 +4,9 @@
     </svg>
     <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No advertisers found</h3>
     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-        @if(request()->hasAny(['search', 'network', 'category', 'weight', 'rule', 'active', 'epc_min', 'epc_max']))
+        @if($hasActiveFilters ?? false)
             No advertisers match your current filters.
-            <a href="{{ route('advertisers.index') }}" class="text-blue-600 hover:underline dark:text-blue-400">Clear all filters</a>
+            <button wire:click="clearFilters" class="text-blue-600 hover:underline dark:text-blue-400">Clear all filters</button>
         @else
             Run a sync to import advertisers from your affiliate networks.
         @endif

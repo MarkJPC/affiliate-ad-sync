@@ -185,8 +185,35 @@
         </div>
     </div>
 
+    {{-- Loading skeleton + dots --}}
+    <div wire:loading.delay.shortest class="min-h-[320px]">
+        <div class="overflow-hidden rounded-xl border border-gray-200/60 bg-white dark:border-gray-700/40 dark:bg-gray-800/80">
+            <div class="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {{-- Skeleton header --}}
+                <div class="flex animate-pulse items-center gap-4 bg-gray-50/80 px-4 py-2.5 dark:bg-gray-800/50">
+                    @for($i = 0; $i < 9; $i++)
+                        <div class="h-2.5 w-14 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    @endfor
+                </div>
+                {{-- Skeleton rows --}}
+                @for($i = 0; $i < 6; $i++)
+                    <div class="flex animate-pulse items-center gap-4 px-4 py-3">
+                        <div class="h-3 w-6 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-3 w-16 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-3 rounded bg-gray-200 dark:bg-gray-700" style="width: {{ [30, 40, 25, 35, 45, 30][$i] }}%"></div>
+                        <div class="ml-auto h-3 w-12 rounded bg-gray-200 dark:bg-gray-700"></div>
+                        <div class="h-3 w-10 rounded bg-gray-200 dark:bg-gray-700"></div>
+                    </div>
+                @endfor
+            </div>
+        </div>
+        <div class="mt-4 flex justify-center">
+            @include('components.loading-dots', ['text' => 'Loading sync logs...', 'size' => 'md'])
+        </div>
+    </div>
+
     {{-- Data table --}}
-    <div class="overflow-hidden rounded-xl border border-gray-200/60 bg-white dark:border-gray-700/40 dark:bg-gray-800/80">
+    <div wire:loading.remove class="overflow-hidden rounded-xl border border-gray-200/60 bg-white dark:border-gray-700/40 dark:bg-gray-800/80">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead>
@@ -288,9 +315,11 @@
     </div>
 
     {{-- Pagination --}}
-    @if($logs->hasPages())
-        <div class="mt-4">
-            {{ $logs->links() }}
-        </div>
-    @endif
+    <div wire:loading.remove>
+        @if($logs->hasPages())
+            <div class="mt-4">
+                {{ $logs->links() }}
+            </div>
+        @endif
+    </div>
 </div>

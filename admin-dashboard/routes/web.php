@@ -25,7 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Phase 2 — Advertiser Grid
-    Route::get('/advertisers', [AdvertiserController::class, 'index'])->name('advertisers.index');
+    Route::get('/advertisers', fn () => view('advertisers.index'))->name('advertisers.index');
 
     // Phase 2 — Ad Review
     Route::get('/ads', fn () => view('ads.index'))->name('ads.index');
@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function () {
 
         Route::post('/advertisers/bulk-rules', [AdvertiserController::class, 'bulkRules'])->name('api.advertisers.bulk-rules');
         Route::post('/advertisers/bulk-weight', [AdvertiserController::class, 'bulkWeight'])->name('api.advertisers.bulk-weight');
+        Route::post('/advertisers/bulk-region', [AdvertiserController::class, 'bulkRegion'])->name('api.advertisers.bulk-region');
 
         Route::patch('/ads/{ad}/approval', [AdController::class, 'updateApproval'])->name('api.ads.approval.update');
         Route::patch('/ads/{ad}/weight', [AdController::class, 'updateWeight'])->name('api.ads.weight.update');

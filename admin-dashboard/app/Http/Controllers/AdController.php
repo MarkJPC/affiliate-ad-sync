@@ -10,7 +10,7 @@ class AdController extends Controller
     public function updateApproval(Request $request, Ad $ad)
     {
         $validated = $request->validate([
-            'approval_status' => 'required|in:approved,pending,denied',
+            'approval_status' => 'required|in:approved,denied',
             'approval_reason' => 'nullable|string|max:500',
         ]);
 
@@ -44,7 +44,7 @@ class AdController extends Controller
             'ad_ids' => 'required_without:filter|array',
             'ad_ids.*' => 'integer|exists:ads,id',
             'filter' => 'nullable|array',
-            'approval_status' => 'required|in:approved,pending,denied',
+            'approval_status' => 'required|in:approved,denied',
             'approval_reason' => 'nullable|string|max:500',
         ]);
 

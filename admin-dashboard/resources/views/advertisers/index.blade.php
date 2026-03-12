@@ -9,122 +9,64 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
 
 <div x-data="advertiserGrid()" x-cloak class="adv-grid font-body">
-
-    {{-- Page header with texture --}}
-    <div class="adv-header relative mb-3 overflow-hidden rounded-xl border border-gray-200/60 bg-white px-5 py-3 dark:border-gray-700/40 dark:bg-gray-800/80">
-        <div class="adv-header-texture"></div>
-        <div class="relative flex items-end justify-between">
-            <div>
-                <p class="mb-1 text-xs font-medium uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">Affiliate Network</p>
-                <h1 class="font-display text-2xl font-500 tracking-tight text-gray-900 dark:text-white">Advertiser Grid</h1>
-                <p class="mt-2 flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span class="font-mono text-xs tabular-nums">{{ number_format($advertisers->total()) }}</span> advertisers
-                    <span class="inline-block h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                    <span class="font-mono text-xs tabular-nums">{{ $sites->count() }}</span> sites
-                    @if(request('rule') === 'default')
-                        <span class="inline-block h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                            <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"></span>
-                            Showing pending only
-                        </span>
-                    @endif
-                </p>
-            </div>
-            <div class="flex items-center gap-3">
-                {{-- Dirty indicator + Apply button --}}
-                <div x-show="isDirty()" x-transition.opacity class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-1.5 dark:border-cyan-800/50 dark:bg-cyan-900/20">
-                        <span class="relative flex h-2 w-2">
-                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75"></span>
-                            <span class="relative inline-flex h-2 w-2 rounded-full bg-cyan-500"></span>
-                        </span>
-                        <span class="font-mono text-xs font-medium text-cyan-700 dark:text-cyan-300" x-text="dirtyCount() + ' unsaved'"></span>
-                    </div>
-                    <button @click="discardChanges()"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Discard
-                    </button>
-                    <button @click="showConfirmModal = true"
-                        class="adv-btn-apply group inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/25 transition-all hover:shadow-cyan-500/40">
-                        <svg class="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        Apply Changes
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Filter bar --}}
-    <div class="mb-2">
-        @include('advertisers.partials.filter-bar')
-    </div>
-
-    {{-- Bulk action bar --}}
-    <div class="mb-2">
-        @include('advertisers.partials.bulk-action-bar')
-    </div>
-
-    {{-- Table or empty state --}}
-    @if($advertisers->isEmpty())
-        @include('advertisers.partials.empty-state')
-    @else
-        @include('advertisers.partials.table')
-    @endif
-
-    {{-- Modals --}}
-    @include('advertisers.partials.detail-modal')
-    @include('advertisers.partials.confirm-modal')
+    @livewire('advertiser-grid')
 </div>
 
 <script>
-function advertiserGrid() {
-    const initialWeights = @json($advertisers->getCollection()->pluck('default_weight', 'id')->map(fn ($v) => $v === null ? '' : (string) $v));
-    const initialRules = @json(
-        $advertisers->getCollection()->flatMap(function ($adv) use ($sites) {
-            $map = [];
-            foreach ($sites as $site) {
-                $rule = $adv->rulesBySite->get($site->id);
-                $key = $adv->id . '-' . $site->id;
-                $map[$key] = $rule ? $rule->rule : null;
-            }
-            return $map;
-        })
-    );
-    const eligibility = @json(
-        $advertisers->getCollection()->flatMap(function ($adv) use ($sites) {
-            $map = [];
-            foreach ($sites as $site) {
-                $key = $adv->id . '-' . $site->id;
-                $map[$key] = $adv->rulesBySite->has($site->id);
-            }
-            return $map;
-        })
-    );
-    const advertiserNames = @json($advertisers->getCollection()->pluck('name', 'id'));
-    const siteNames = @json($sites->pluck('name', 'id'));
-    const pageIds = @json($advertisers->getCollection()->pluck('id'));
+let regionCountryMap = {};
+let regionNameMap = {};
 
+function advertiserGrid() {
     return {
         selected: [],
-        weights: { ...initialWeights },
-        originalWeights: { ...initialWeights },
+        weights: {},
+        originalWeights: {},
         dirtyWeights: {},
-        rules: { ...initialRules },
-        originalRules: { ...initialRules },
+        regions: {},
+        originalRegions: {},
+        dirtyRegions: {},
+        rules: {},
+        originalRules: {},
         dirtyRules: {},
-        eligibility,
+        eligibility: {},
         showDetailModal: false,
         showConfirmModal: false,
         detailData: {},
+        logoError: false,
         bulkWeight: '',
+        bulkRegion: '',
         bulkRuleSite: '',
         bulkRuleValue: '',
         isApplying: false,
         applyReason: '',
+        _advertiserNames: {},
+        _siteNames: {},
+        _pageIds: [],
 
-        getAdvertiserName(id) { return advertiserNames[id] || `#${id}`; },
-        getSiteName(id) { return siteNames[id] || `#${id}`; },
+        init() {
+            Livewire.on('advertisers-updated', (data) => {
+                // data is an array with one element (Livewire v3 event format)
+                const d = Array.isArray(data) ? data[0] : data;
+                this.weights = { ...d.weights };
+                this.originalWeights = { ...d.weights };
+                this.dirtyWeights = {};
+                this.regions = { ...d.regions };
+                this.originalRegions = { ...d.regions };
+                this.dirtyRegions = {};
+                this.rules = { ...d.rules };
+                this.originalRules = { ...d.rules };
+                this.dirtyRules = {};
+                this.eligibility = d.eligibility || {};
+                this._advertiserNames = d.advertiserNames || {};
+                this._siteNames = d.siteNames || {};
+                this._pageIds = d.pageIds || [];
+                regionCountryMap = d.regionCountryMap || {};
+                regionNameMap = d.regionNameMap || {};
+            });
+        },
+
+        getAdvertiserName(id) { return this._advertiserNames[id] || `#${id}`; },
+        getSiteName(id) { return this._siteNames[id] || `#${id}`; },
         isEligible(advId, siteId) { return this.eligibility[`${advId}-${siteId}`] !== false; },
 
         toggleSelect(id) {
@@ -133,18 +75,19 @@ function advertiserGrid() {
         },
         toggleSelectAll(event) {
             if (event.target.checked) {
-                this.selected = [...new Set([...this.selected, ...pageIds])];
+                this.selected = [...new Set([...this.selected, ...this._pageIds])];
             } else {
-                this.selected = this.selected.filter(id => !pageIds.includes(id));
+                this.selected = this.selected.filter(id => !this._pageIds.includes(id));
             }
         },
         allOnPageSelected() {
-            return pageIds.length > 0 && pageIds.every(id => this.selected.includes(id));
+            return this._pageIds.length > 0 && this._pageIds.every(id => this.selected.includes(id));
         },
         selectAllMatching() { this.selected = ['all_matching']; },
         clearSelection() {
             this.selected = [];
             this.bulkWeight = '';
+            this.bulkRegion = '';
             this.bulkRuleSite = '';
             this.bulkRuleValue = '';
         },
@@ -153,6 +96,11 @@ function advertiserGrid() {
             const current = this.weights[id];
             const original = this.originalWeights[id];
             current !== original ? (this.dirtyWeights[id] = true) : delete this.dirtyWeights[id];
+        },
+        markRegionDirty(id) {
+            const current = this.regions[id];
+            const original = this.originalRegions[id];
+            current !== original ? (this.dirtyRegions[id] = true) : delete this.dirtyRegions[id];
         },
 
         getRuleValue(advId, siteId) { return this.rules[`${advId}-${siteId}`]; },
@@ -187,12 +135,14 @@ function advertiserGrid() {
             next !== this.originalRules[key] ? (this.dirtyRules[key] = true) : delete this.dirtyRules[key];
         },
 
-        isDirty() { return Object.keys(this.dirtyWeights).length > 0 || Object.keys(this.dirtyRules).length > 0; },
-        dirtyCount() { return Object.keys(this.dirtyWeights).length + Object.keys(this.dirtyRules).length; },
+        isDirty() { return Object.keys(this.dirtyWeights).length > 0 || Object.keys(this.dirtyRegions).length > 0 || Object.keys(this.dirtyRules).length > 0; },
+        dirtyCount() { return Object.keys(this.dirtyWeights).length + Object.keys(this.dirtyRegions).length + Object.keys(this.dirtyRules).length; },
         discardChanges() {
             this.weights = { ...this.originalWeights };
+            this.regions = { ...this.originalRegions };
             this.rules = { ...this.originalRules };
             this.dirtyWeights = {};
+            this.dirtyRegions = {};
             this.dirtyRules = {};
         },
 
@@ -202,6 +152,13 @@ function advertiserGrid() {
             const ids = this.selected.includes('all_matching') ? Object.keys(this.weights) : this.selected;
             ids.forEach(id => { this.weights[id] = val; this.markWeightDirty(id); });
             this.bulkWeight = '';
+        },
+        applyBulkRegion() {
+            if (!this.bulkRegion) return;
+            const val = this.bulkRegion === 'clear' ? '' : this.bulkRegion;
+            const ids = this.selected.includes('all_matching') ? Object.keys(this.regions) : this.selected;
+            ids.forEach(id => { this.regions[id] = val; this.markRegionDirty(id); });
+            this.bulkRegion = '';
         },
         applyBulkRule() {
             if (!this.bulkRuleSite || !this.bulkRuleValue) return;
@@ -215,7 +172,7 @@ function advertiserGrid() {
             this.bulkRuleValue = '';
         },
 
-        openDetail(id, data) { this.detailData = data; this.showDetailModal = true; },
+        openDetail(id, data) { this.detailData = data; this.logoError = false; this.showDetailModal = true; },
 
         async applyAllChanges() {
             this.isApplying = true;
@@ -236,6 +193,20 @@ function advertiserGrid() {
                         body: JSON.stringify({ advertiser_ids: ids, default_weight: val === 'null' ? null : val }),
                     }));
                 }
+                const regionsByCode = {};
+                for (const id of Object.keys(this.dirtyRegions)) {
+                    const regionId = this.regions[id];
+                    const countryCode = regionId ? (regionCountryMap[regionId] || null) : null;
+                    const key = countryCode === null ? 'null' : countryCode;
+                    if (!regionsByCode[key]) regionsByCode[key] = [];
+                    regionsByCode[key].push(parseInt(id));
+                }
+                for (const [code, ids] of Object.entries(regionsByCode)) {
+                    promises.push(fetch('{{ route("api.advertisers.bulk-region") }}', {
+                        method: 'POST', headers,
+                        body: JSON.stringify({ advertiser_ids: ids, country_code: code === 'null' ? null : code }),
+                    }));
+                }
                 const ruleGroups = {};
                 for (const key of Object.keys(this.dirtyRules)) {
                     const [advId, siteId] = key.split('-');
@@ -252,7 +223,12 @@ function advertiserGrid() {
                 }
                 const results = await Promise.all(promises);
                 if (results.every(r => r.ok)) {
-                    window.location.reload();
+                    this.showConfirmModal = false;
+                    this.isApplying = false;
+                    this.applyReason = '';
+                    // Refresh Livewire component instead of full page reload
+                    const component = Livewire.first();
+                    if (component) component.$refresh();
                 } else {
                     alert('Some changes failed to save. Please try again.');
                     this.isApplying = false;

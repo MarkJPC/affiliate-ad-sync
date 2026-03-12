@@ -41,6 +41,23 @@
                 </div>
             </template>
 
+            {{-- Region changes --}}
+            <template x-if="Object.keys(dirtyRegions).length > 0">
+                <div class="mb-4">
+                    <h4 class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">Region Changes</h4>
+                    <ul class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                        <template x-for="id in Object.keys(dirtyRegions)" :key="id">
+                            <li class="flex items-center gap-2">
+                                <span class="inline-block h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+                                <span x-text="getAdvertiserName(id)"></span>
+                                <span class="text-gray-400">&rarr;</span>
+                                <span class="font-medium" x-text="regions[id] ? (regionNameMap[regions[id]] || regions[id]) : '--- (cleared)'"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
             {{-- Rule changes --}}
             <template x-if="Object.keys(dirtyRules).length > 0">
                 <div class="mb-4">

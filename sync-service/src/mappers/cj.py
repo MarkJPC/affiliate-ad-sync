@@ -156,8 +156,8 @@ class CJMapper(Mapper):
             "geo_countries": "a:0:{}",
 
             # Schedule: use real dates if available
-            "schedule_start": parse_date_to_unix(raw.get("performance-start-date"), 0),
-            "schedule_end": parse_date_to_unix(raw.get("performance-end-date"), 2650941780),
+            "schedule_start": parse_date_to_unix(raw.get("promotion-start-date"), 0),
+            "schedule_end": parse_date_to_unix(raw.get("promotion-end-date"), 2650941780),
         }
 
     def _sanitize_name(self, name: str) -> str:

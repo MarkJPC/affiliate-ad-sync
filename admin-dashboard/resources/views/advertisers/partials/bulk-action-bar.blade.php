@@ -31,6 +31,23 @@
 
         <div class="h-4 w-px bg-blue-200 dark:bg-blue-700"></div>
 
+        {{-- Bulk region --}}
+        <div class="flex items-center gap-1.5">
+            <select x-model="bulkRegion" class="rounded-md border-gray-300 py-0.5 pl-2 pr-6 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                <option value="">Region...</option>
+                <option value="clear">--- (clear)</option>
+                @foreach($geoRegions as $gr)
+                    <option value="{{ $gr->id }}">{{ $gr->name }}</option>
+                @endforeach
+            </select>
+            <button type="button" @click="applyBulkRegion()" :disabled="!bulkRegion"
+                class="rounded-md bg-blue-600 px-2.5 py-0.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Apply Region
+            </button>
+        </div>
+
+        <div class="h-4 w-px bg-blue-200 dark:bg-blue-700"></div>
+
         {{-- Bulk rule --}}
         <div class="flex items-center gap-1.5">
             <select x-model="bulkRuleSite" class="rounded-md border-gray-300 py-0.5 pl-2 pr-6 text-xs shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">

@@ -274,9 +274,15 @@ class ImpactClient(NetworkClient):
             raw_ads = self.fetch_ads("")
             logger.info(f"[impact] Fetched {len(raw_ads)} ads")
 
+            # Filter to English-only ads (Impact has no server-side language filter)
+            english_ads = [ad for ad in raw_ads if ad.get("Language", "").upper() == "ENGLISH"]
+            skipped = len(raw_ads) - len(english_ads)
+            if skipped:
+                logger.info(f"[impact] Filtered out {skipped} non-English ads")
+
             # Group ads by CampaignId for lookup
             ads_by_campaign: dict[str, list[dict]] = defaultdict(list)
-            for raw_ad in raw_ads:
+            for raw_ad in english_ads:
                 ads_by_campaign[raw_ad.get("CampaignId", "")].append(raw_ad)
 
             seen_advertiser_ids: set[str] = set()

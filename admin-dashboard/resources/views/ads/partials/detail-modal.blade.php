@@ -65,17 +65,17 @@
 
         {{-- KPI row --}}
         <div class="grid grid-cols-3 divide-x divide-gray-200/60 border-b border-gray-200/60 dark:divide-gray-700/40 dark:border-gray-700/40">
-            <div class="px-4 py-3 text-center">
-                <p class="text-[0.6rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">EPC</p>
-                <p class="font-mono text-lg tabular-nums text-cyan-600 dark:text-cyan-400" x-text="'$' + Number(detailAd?.epc || 0).toFixed(2)"></p>
+            <div class="px-1.5 py-1.5 text-center">
+                <p class="text-[0.55rem] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">EPC</p>
+                <p class="font-mono text-sm leading-tight tabular-nums text-cyan-600 dark:text-cyan-400" x-text="'$' + Number(detailAd?.epc || 0).toFixed(2)"></p>
             </div>
-            <div class="px-4 py-3 text-center">
-                <p class="text-[0.6rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Clicks</p>
-                <p class="font-mono text-lg tabular-nums text-gray-900 dark:text-white" x-text="Number(detailAd?.clicks || 0).toLocaleString()"></p>
+            <div class="px-1.5 py-1.5 text-center">
+                <p class="text-[0.55rem] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Clicks</p>
+                <p class="font-mono text-sm leading-tight tabular-nums text-gray-900 dark:text-white" x-text="Number(detailAd?.clicks || 0).toLocaleString()"></p>
             </div>
-            <div class="px-4 py-3 text-center">
-                <p class="text-[0.6rem] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">Revenue</p>
-                <p class="font-mono text-lg tabular-nums text-gray-900 dark:text-white" x-text="'$' + Number(detailAd?.revenue || 0).toFixed(2)"></p>
+            <div class="px-1.5 py-1.5 text-center">
+                <p class="text-[0.55rem] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Revenue</p>
+                <p class="font-mono text-sm leading-tight tabular-nums text-gray-900 dark:text-white" x-text="'$' + Number(detailAd?.revenue || 0).toFixed(2)"></p>
             </div>
         </div>
 
@@ -107,6 +107,20 @@
                 <span class="text-xs text-gray-500 dark:text-gray-400">Status</span>
                 <span class="text-xs capitalize" :class="ads[detailAd?.id]?.approval_status === 'denied' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'"
                     x-text="ads[detailAd?.id]?.approval_status"></span>
+            </div>
+            <div class="flex items-center justify-between py-2.5">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Schedule Start</span>
+                <span class="font-mono text-[0.7rem] text-gray-500 dark:text-gray-400"
+                    x-text="detailAd?.schedule_start && detailAd.schedule_start !== 0
+                        ? new Date(detailAd.schedule_start * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'No start date'"></span>
+            </div>
+            <div class="flex items-center justify-between py-2.5">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Schedule End</span>
+                <span class="font-mono text-[0.7rem] text-gray-500 dark:text-gray-400"
+                    x-text="detailAd?.schedule_end && detailAd.schedule_end !== 2650941780
+                        ? new Date(detailAd.schedule_end * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'No end date'"></span>
             </div>
             <div class="flex items-center justify-between py-2.5">
                 <span class="text-xs text-gray-500 dark:text-gray-400">Last synced</span>

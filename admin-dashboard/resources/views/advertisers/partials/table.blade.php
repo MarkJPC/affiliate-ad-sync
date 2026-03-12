@@ -1,11 +1,7 @@
 @php
-    $sortUrl = function ($column) use ($sort, $dir) {
-        $newDir = ($sort === $column && $dir === 'asc') ? 'desc' : 'asc';
-        return request()->fullUrlWithQuery(['sort' => $column, 'dir' => $newDir]);
-    };
-    $sortIcon = function ($column) use ($sort, $dir) {
-        if ($sort !== $column) return '';
-        return $dir === 'asc' ? '&#9650;' : '&#9660;';
+    $sortIcon = function ($column) {
+        if (($this->sortField ?? '') !== $column) return '';
+        return ($this->sortDir ?? 'asc') === 'asc' ? '&#9650;' : '&#9660;';
     };
 @endphp
 
@@ -20,31 +16,30 @@
                         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
                 </th>
                 <th class="px-2 py-1.5">
-                    <a href="{{ $sortUrl('name') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+                    <button wire:click="sortBy('name')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         Name {!! $sortIcon('name') !!}
-                    </a>
+                    </button>
                 </th>
                 <th class="px-2 py-1.5">
-                    <a href="{{ $sortUrl('network') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+                    <button wire:click="sortBy('network')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         Network {!! $sortIcon('network') !!}
-                    </a>
+                    </button>
                 </th>
                 <th class="px-2 py-1.5">
-                    <a href="{{ $sortUrl('epc') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+                    <button wire:click="sortBy('epc')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         EPC {!! $sortIcon('epc') !!}
-                    </a>
+                    </button>
                 </th>
                 <th class="px-2 py-1.5">
-                    <a href="{{ $sortUrl('commission_rate') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+                    <button wire:click="sortBy('commission_rate')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         Commission {!! $sortIcon('commission_rate') !!}
-                    </a>
+                    </button>
                 </th>
-                <th class="px-2 py-1.5">Country</th>
                 <th class="px-2 py-1.5">Region</th>
                 <th class="px-2 py-1.5">
-                    <a href="{{ $sortUrl('default_weight') }}" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
+                    <button wire:click="sortBy('default_weight')" class="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white">
                         Weight {!! $sortIcon('default_weight') !!}
-                    </a>
+                    </button>
                 </th>
                 @foreach($sites as $site)
                     <th class="px-1 py-1.5 text-center" title="{{ $site->domain }}">
@@ -68,7 +63,7 @@
                         $lastDuplicateGroup = $lowerName;
                     @endphp
                     <tr class="border-b bg-amber-50 dark:border-gray-700 dark:bg-amber-900/20">
-                        <td colspan="{{ 8 + $sites->count() }}" class="px-2 py-1">
+                        <td colspan="{{ 7 + $sites->count() }}" class="px-2 py-1">
                             <span class="text-xs font-semibold text-amber-700 dark:text-amber-400">
                                 Duplicate: {{ $advertiser->name }} ({{ $groupCount }} networks)
                             </span>
