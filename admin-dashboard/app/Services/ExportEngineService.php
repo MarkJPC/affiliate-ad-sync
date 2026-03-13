@@ -355,6 +355,12 @@ class ExportEngineService
             $imagetype = '';
         }
 
+        // AdRotate requires image_url to be empty when imagetype is not 'dropdown'.
+        // Populating image_url with imagetype empty causes a critical import error.
+        if ($imagetype === '') {
+            $imageUrl = '';
+        }
+
         return array_merge($row, [
             'advert_name' => $advertName,
             'bannercode' => $this->normalizeBannercode($bannercode),
