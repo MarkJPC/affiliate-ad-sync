@@ -350,16 +350,10 @@ class ExportEngineService
         }
 
         // AdRotate uses blank imagetype for affiliate ads; only 'dropdown' for uploaded images
-        //$imagetype = strtolower(trim((string) ($row['imagetype'] ?? '')));
-        //if (!in_array($imagetype, ['dropdown'], true)) {
-        //    $imagetype = '';
-        //}
-
-        // AdRotate requires image_url to be empty when imagetype is not 'dropdown'.
-        // Populating image_url with imagetype empty causes a critical import error.
-        //if ($imagetype === '') {
-        //    $imageUrl = '';
-        //}
+        $imagetype = strtolower(trim((string) ($row['imagetype'] ?? '')));
+        if (!in_array($imagetype, ['dropdown'], true)) {
+            $imagetype = '';
+        }
 
         return array_merge($row, [
             'advert_name' => $advertName,
