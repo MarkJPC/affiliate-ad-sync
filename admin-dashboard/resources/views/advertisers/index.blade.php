@@ -445,6 +445,10 @@ function advertiserGrid() {
     .dark .adv-detail-hero {
         background: linear-gradient(135deg, rgba(6,182,212,0.06) 0%, transparent 60%);
     }
+    /* Override Tailwind base img reset for modal logo */
+    .adv-detail-hero img {
+        max-width: none;
+    }
 
     /* ── Scrollbar ──────────────────────────────── */
     .adv-grid ::-webkit-scrollbar { height: 6px; width: 6px; }
