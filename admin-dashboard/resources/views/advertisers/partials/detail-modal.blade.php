@@ -27,10 +27,10 @@
                         <img :src="detailData.logo_url"
                             :alt="detailData.name"
                             x-on:error="logoError = true"
-                            class="max-h-14 max-w-14 h-auto w-auto shrink-0 rounded-xl border border-gray-200/60 object-contain bg-white dark:border-gray-700/40 dark:bg-gray-700">
+                            class="max-h-24 max-w-24 h-auto w-auto shrink-0 rounded-xl border border-gray-200/60 object-contain bg-white dark:border-gray-700/40 dark:bg-gray-700">
                     </template>
                     <template x-if="!detailData.logo_url || logoError">
-                        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-gray-200/60 bg-gray-100 text-xl font-semibold text-gray-400 dark:border-gray-700/40 dark:bg-gray-700 dark:text-gray-500"
+                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-gray-200/60 bg-gray-100 text-xl font-semibold text-gray-400 dark:border-gray-700/40 dark:bg-gray-700 dark:text-gray-500"
                             x-text="(detailData.name || '?').charAt(0).toUpperCase()"></div>
                     </template>
                 </div>
