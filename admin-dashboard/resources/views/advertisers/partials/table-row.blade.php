@@ -55,7 +55,7 @@
     </td>
 
     {{-- EPC --}}
-    <td class="px-2 py-1 font-mono text-xs text-gray-700 dark:text-gray-300">${{ number_format($advertiser->epc, 2) }}</td>
+    <td class="px-2 py-1 font-mono text-xs text-gray-700 dark:text-gray-300">@if($advertiser->epc == 0 && in_array($advertiser->network, ['impact', 'awin']))&mdash;@else${{ number_format($advertiser->epc, 2) }}@endif</td>
 
     {{-- Commission rate --}}
     <td class="px-2 py-1 text-xs text-gray-700 dark:text-gray-300">{{ $advertiser->commission_rate ?? '---' }}</td>

@@ -358,7 +358,7 @@ class ExportEngineService
         return array_merge($row, [
             'advert_name' => $advertName,
             'bannercode' => $this->normalizeBannercode($bannercode),
-            'image_url' => $imageUrl,
+            'image_url' => $imagetype === 'dropdown' ? $imageUrl : '',
             'width' => $width,
             'height' => $height,
             'final_weight' => $finalWeight,

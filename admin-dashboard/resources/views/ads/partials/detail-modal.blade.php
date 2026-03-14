@@ -51,8 +51,15 @@
         {{-- Preview --}}
         <div class="border-b border-gray-200/60 px-5 py-4 dark:border-gray-700/40">
             <div class="flex items-center justify-center overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-700/50" style="min-height: 120px; max-height: 300px;">
-                <template x-if="detailAd?.creative_type === 'banner' && detailAd?.image_url">
-                    <img :src="detailAd.image_url" :alt="detailAd.advert_name" class="max-h-[300px] w-full object-contain">
+                <template x-if="detailAd?.creative_type === 'banner' && detailAd?.image_url && !brokenImages[detailAd?.id]">
+                    <img :src="detailAd.image_url" :alt="detailAd.advert_name" class="max-h-[300px] w-full object-contain"
+                        x-on:error="markBrokenImage(detailAd.id)">
+                </template>
+                <template x-if="detailAd?.creative_type === 'banner' && detailAd?.image_url && brokenImages[detailAd?.id]">
+                    <div class="flex flex-col items-center justify-center gap-1 py-8 text-gray-400 dark:text-gray-500">
+                        <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a2.25 2.25 0 002.25-2.25V5.25a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/></svg>
+                        <span class="text-xs">Image unavailable</span>
+                    </div>
                 </template>
                 <template x-if="detailAd?.creative_type === 'html'">
                     <iframe :srcdoc="detailAd?.html_snippet || ''" sandbox="allow-scripts allow-same-origin" class="pointer-events-none h-[250px] w-full border-0"></iframe>
@@ -67,7 +74,8 @@
         <div class="grid grid-cols-3 divide-x divide-gray-200/60 border-b border-gray-200/60 dark:divide-gray-700/40 dark:border-gray-700/40">
             <div class="px-1.5 py-1.5 text-center">
                 <p class="text-[0.55rem] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">EPC</p>
-                <p class="font-mono text-sm leading-tight tabular-nums text-cyan-600 dark:text-cyan-400" x-text="'$' + Number(detailAd?.epc || 0).toFixed(2)"></p>
+                <p class="font-mono text-sm leading-tight tabular-nums text-cyan-600 dark:text-cyan-400"
+                    x-text="(Number(detailAd?.epc || 0) === 0 && (detailAd?.network === 'impact' || detailAd?.network === 'awin')) ? '\u2014' : '$' + Number(detailAd?.epc || 0).toFixed(2)"></p>
             </div>
             <div class="px-1.5 py-1.5 text-center">
                 <p class="text-[0.55rem] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Clicks</p>
@@ -189,7 +197,7 @@
                     <svg x-show="savingApproval[detailAd?.id]" x-cloak class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     Approve
                 </button>
-                <button @click="if (detailAd?.id) startDeny(detailAd.id)"
+                <button @click="if (detailAd?.id) denyImmediate(detailAd.id)"
                     :disabled="!detailAd?.id || savingApproval[detailAd?.id]"
                     class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-all"
                     :class="ads[detailAd?.id]?.approval_status === 'denied'

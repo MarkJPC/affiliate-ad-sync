@@ -60,8 +60,20 @@ function advertiserGrid() {
                 this._advertiserNames = d.advertiserNames || {};
                 this._siteNames = d.siteNames || {};
                 this._pageIds = d.pageIds || [];
+                this.selected = [];
                 regionCountryMap = d.regionCountryMap || {};
                 regionNameMap = d.regionNameMap || {};
+            });
+
+            // Warn about unsaved changes on pagination
+            Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+                if (this.isDirty()) {
+                    if (!confirm('You have unsaved changes. Discard and continue?')) {
+                        fail();
+                        return;
+                    }
+                }
+                succeed();
             });
         },
 
@@ -222,19 +234,22 @@ function advertiserGrid() {
                     }));
                 }
                 const results = await Promise.all(promises);
-                if (results.every(r => r.ok)) {
+                const succeeded = results.filter(r => r.ok).length;
+                const failed = results.filter(r => !r.ok).length;
+                if (failed === 0) {
                     this.showConfirmModal = false;
                     this.isApplying = false;
                     this.applyReason = '';
+                    this.selected = [];
                     // Refresh Livewire component instead of full page reload
                     const component = Livewire.first();
                     if (component) component.$refresh();
                 } else {
-                    alert('Some changes failed to save. Please try again.');
+                    alert(`${succeeded} of ${results.length} operations succeeded, ${failed} failed. Please review and retry the remaining changes.`);
                     this.isApplying = false;
                 }
             } catch (error) {
-                alert('An error occurred while saving changes.');
+                alert('Network error while saving changes. Please check your connection and try again.');
                 this.isApplying = false;
             }
         },

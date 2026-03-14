@@ -166,7 +166,11 @@ class AdGrid extends Component
 
     public function markReviewed(): void
     {
-        auth()->user()->update(['last_ad_review_at' => now()]);
+        try {
+            auth()->user()->update(['last_ad_review_at' => now()]);
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to mark as reviewed. The migration may need to be run.');
+        }
     }
 
     public function render()
@@ -273,6 +277,9 @@ class AdGrid extends Component
     private function buildQuery($user, $activeSizes = null)
     {
         $query = Ad::query()->with('advertiser');
+
+        // Filter out ads from inactive advertisers
+        $query->whereHas('advertiser', fn ($q) => $q->where('is_active', true));
 
         // Base filter: hide ads from advertisers explicitly denied on all sites
         // (has at least one 'denied' rule AND zero 'allowed' rules)

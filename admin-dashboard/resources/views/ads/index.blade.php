@@ -294,6 +294,30 @@ function adReviewGrid() {
             this.savingApproval = { ...this.savingApproval, [id]: false };
         },
 
+        async denyImmediate(id) {
+            if (!id) return;
+            this.savingApproval = { ...this.savingApproval, [id]: true };
+            try {
+                const res = await fetch(`/api/ads/${id}/approval`, {
+                    method: 'PATCH',
+                    headers: this._headers(),
+                    body: JSON.stringify({ approval_status: 'denied' }),
+                });
+                if (res.ok) {
+                    this.ads[id] = { ...this.ads[id], approval_status: 'denied', approval_reason: null };
+                    if (this.detailAd?.id === id) {
+                        this.detailAd = this.ads[id];
+                    }
+                    const card = document.querySelector(`[data-ad-id="${id}"]`);
+                    if (card) {
+                        card.style.animation = 'deny-flash 0.5s ease-out';
+                        setTimeout(() => card.style.animation = '', 500);
+                    }
+                }
+            } catch (e) { console.error('Deny failed:', e); }
+            this.savingApproval = { ...this.savingApproval, [id]: false };
+        },
+
         startDeny(id) {
             this.denyTarget = { type: 'single', adId: id };
             this.denyReason = '';
@@ -375,6 +399,9 @@ function adReviewGrid() {
                     const count = data.count || ids.length;
                     this.showToast(`${count} ad${count !== 1 ? 's' : ''} ${status}`, 'success');
                     this.clearSelection();
+                    // Refresh Livewire to update pagination counts
+                    const component = Livewire.first();
+                    if (component) component.$refresh();
                 }
             } catch (e) { console.error(e); }
         },

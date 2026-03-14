@@ -140,16 +140,25 @@ class AdvertiserGrid extends Component
         // Filter by rule status for a specific site
         if ($this->rule !== '') {
             if ($this->rule === 'default' && $this->ruleSite === '') {
-                $query->where(function ($q) use ($siteIds) {
-                    $q->whereDoesntHave('siteRules', function ($sq) use ($siteIds) {
-                        $sq->whereIn('site_id', $siteIds)->whereIn('rule', ['allowed', 'denied']);
-                    });
+                // Show advertisers where at least one active site has no allowed/denied rule
+                $activeSiteCount = $siteIds->count();
+                $query->where(function ($q) use ($siteIds, $activeSiteCount) {
+                    $q->whereRaw(
+                        '(SELECT COUNT(*) FROM site_advertiser_rules WHERE site_advertiser_rules.advertiser_id = advertisers.id AND site_id IN (' . $siteIds->implode(',') . ') AND rule IN (?, ?)) < ?',
+                        ['allowed', 'denied', $activeSiteCount]
+                    );
                 });
             } elseif ($this->ruleSite !== '') {
                 $ruleSiteId = $this->ruleSite;
                 $rule = $this->rule;
                 $query->whereHas('siteRules', function ($q) use ($rule, $ruleSiteId) {
                     $q->where('site_id', $ruleSiteId)->where('rule', $rule);
+                });
+            } else {
+                // Allowed/Denied without a specific site: match advertisers with that rule on ANY active site
+                $rule = $this->rule;
+                $query->whereHas('siteRules', function ($q) use ($rule, $siteIds) {
+                    $q->whereIn('site_id', $siteIds)->where('rule', $rule);
                 });
             }
         }

@@ -64,12 +64,18 @@
                     </button>
                 @endif
 
+                {{-- Global approval note --}}
+                <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-[0.6rem] text-gray-500 dark:bg-gray-700 dark:text-gray-400" title="Approving or denying an ad applies globally across all sites">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Approval is global
+                </span>
+
                 {{-- Select all on page --}}
-                <label class="flex cursor-pointer items-center gap-1">
+                <label class="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 dark:border-gray-600 dark:bg-gray-700/50">
                     <input type="checkbox" x-on:change="toggleSelectAll($event)"
                         :checked="allOnPageSelected()"
                         class="h-3.5 w-3.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 dark:border-gray-600 dark:bg-gray-700">
-                    <span class="text-[0.65rem] text-gray-500 dark:text-gray-400">All</span>
+                    <span class="text-[0.65rem] font-medium text-gray-600 dark:text-gray-300">Select page</span>
                 </label>
             </div>
         </div>
@@ -204,7 +210,8 @@
             </label>
 
             {{-- Needs Attention toggle --}}
-            <label class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-700/50">
+            <label class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs dark:border-gray-600 dark:bg-gray-700/50"
+                title="Uncheck to show all ads, including previously reviewed ones. Use this to find and reactivate denied ads.">
                 <input type="checkbox" value="1"
                     x-on:change="$wire.set('needsAttention', $event.target.checked ? '1' : '0')"
                     :checked="$wire.needsAttention === '1'"

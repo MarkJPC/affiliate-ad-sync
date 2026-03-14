@@ -86,7 +86,7 @@
                         <span class="font-mono">{{ $ad->width }}&times;{{ $ad->height }}</span>
                         <span class="text-gray-300 dark:text-gray-600">&middot;</span>
                     @endif
-                    <span class="font-mono text-cyan-600 dark:text-cyan-400">${{ number_format($ad->epc ?? 0, 2) }}</span>
+                    <span class="font-mono text-cyan-600 dark:text-cyan-400">@if(($ad->epc ?? 0) == 0 && in_array($ad->network, ['impact', 'awin']))&mdash;@else${{ number_format($ad->epc ?? 0, 2) }}@endif</span>
                 </div>
             </div>
         </template>
@@ -100,7 +100,7 @@
                 <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 <span x-show="viewSize !== 'small'" class="text-[0.65rem]">Approve</span>
             </button>
-            <button x-on:click="startDeny({{ $ad->id }})"
+            <button x-on:click="denyImmediate({{ $ad->id }})"
                 :disabled="savingApproval[{{ $ad->id }}]"
                 class="ad-btn-deny"
                 :class="ads[{{ $ad->id }}]?.approval_status === 'denied' ? 'ad-btn-active-deny' : 'ad-btn-inactive'">
