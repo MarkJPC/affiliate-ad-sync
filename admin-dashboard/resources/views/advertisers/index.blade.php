@@ -44,6 +44,14 @@ function advertiserGrid() {
         _pageIds: [],
 
         init() {
+            // Register dirty-state callbacks for layout-level nav guard
+            const self = this;
+            window.__dirtyGuard = {
+                isDirty: () => self.isDirty(),
+                save: () => self.applyAllChanges(),
+                discard: () => self.discardChanges(),
+            };
+
             Livewire.on('advertisers-updated', (data) => {
                 // data is an array with one element (Livewire v3 event format)
                 const d = Array.isArray(data) ? data[0] : data;
@@ -65,12 +73,11 @@ function advertiserGrid() {
                 regionNameMap = d.regionNameMap || {};
             });
 
-            // Warn about unsaved changes on pagination
+            // Warn about unsaved changes on Livewire commits (pagination/filters)
             Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
                 if (this.isDirty()) {
-                    if (!confirm('You have unsaved changes. Discard and continue?')) {
-                        fail();
-                    }
+                    fail();
+                    window.__navGuard.showForLivewire();
                 }
             });
         },

@@ -436,6 +436,16 @@ function sitesManager() {
     const metaData = @json($placementsByKey->mapWithKeys(fn ($p) => [$p->id => $p->name . ' (' . $p->width . 'x' . $p->height . ')']));
 
     return {
+        init() {
+            // Register dirty-state callbacks for layout-level nav guard
+            const self = this;
+            window.__dirtyGuard = {
+                isDirty: () => self.isPlacementDirty(),
+                save: () => self.applyPlacementChanges(),
+                discard: () => self.discardPlacementChanges(),
+            };
+        },
+
         // Section A: Sites Management
         showModal: false,
         editId: null,
