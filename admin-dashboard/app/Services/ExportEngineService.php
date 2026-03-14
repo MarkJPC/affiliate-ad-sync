@@ -394,6 +394,10 @@ class ExportEngineService
             $html = preg_replace('/<a\s/', '<a rel="sponsored" ', $html);
         }
 
+        // Collapse whitespace/newlines to single spaces (AdRotate can't handle multi-line CSV fields)
+        $html = preg_replace('/\s+/', ' ', $html);
+        $html = trim($html);
+
         // HTML-encode the entire string for AdRotate import
         $html = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
 
