@@ -303,6 +303,9 @@ class BannerExportVerificationTest extends TestCase
         // bannercode should have %asset% instead of raw image URL in src
         $this->assertStringContainsString('src=&quot;%asset%&quot;', $mapped['bannercode']);
         $this->assertStringNotContainsString('src=&quot;http://cdn.example.com/banner.jpg&quot;', $mapped['bannercode']);
+
+        // closing tag must be valid /> not malformed //>
+        $this->assertStringNotContainsString('//&gt;', $mapped['bannercode']);
     }
 
     private function createExportSchema(): void

@@ -417,8 +417,8 @@ class ExportEngineService
     private function replaceImgSrcWithAsset(string $html): string
     {
         return preg_replace(
-            '/<img\b([^>]*)\bsrc="[^"]*"([^>]*)\/?>/i',
-            '<img$1src="%asset%"$2/>',
+            '/(<img\b[^>]*)\bsrc="[^"]*"/i',
+            '$1src="%asset%"',
             $html
         );
     }
