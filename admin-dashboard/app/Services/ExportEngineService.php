@@ -349,16 +349,20 @@ class ExportEngineService
             $advertName = 'Ad ' . (string) ($row['ad_id'] ?? '');
         }
 
-        // AdRotate uses blank imagetype for affiliate ads; only 'dropdown' for uploaded images
-        $imagetype = strtolower(trim((string) ($row['imagetype'] ?? '')));
-        if (!in_array($imagetype, ['dropdown'], true)) {
+        // AdRotate dropdown asset mode: when image_url is present, set imagetype to
+        // 'dropdown' and replace <img src="..."> with <img src="%asset%"> so all three
+        // fields (imagetype, image_url, bannercode) stay in sync per AdRotate validation.
+        if ($imageUrl !== '') {
+            $imagetype = 'dropdown';
+            $bannercode = $this->replaceImgSrcWithAsset($bannercode);
+        } else {
             $imagetype = '';
         }
 
         return array_merge($row, [
             'advert_name' => $advertName,
             'bannercode' => $this->normalizeBannercode($bannercode),
-            'image_url' => $imagetype === 'dropdown' ? $imageUrl : '',
+            'image_url' => $imageUrl,
             'width' => $width,
             'height' => $height,
             'final_weight' => $finalWeight,
@@ -402,6 +406,21 @@ class ExportEngineService
         $html = htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
 
         return $html;
+    }
+
+    /**
+     * Replace the src attribute of <img> tags with %asset% for AdRotate dropdown mode.
+     *
+     * AdRotate renders %asset% via: str_replace('%asset%', $image, $bannercode)
+     * so <img src="%asset%" /> becomes <img src="http://full-url/image.jpg" />
+     */
+    private function replaceImgSrcWithAsset(string $html): string
+    {
+        return preg_replace(
+            '/<img\b([^>]*)\bsrc="[^"]*"([^>]*)\/?>/i',
+            '<img$1src="%asset%"$2/>',
+            $html
+        );
     }
 
     private function normalizeYn(mixed $value, string $default): string

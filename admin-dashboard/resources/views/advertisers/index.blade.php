@@ -70,10 +70,8 @@ function advertiserGrid() {
                 if (this.isDirty()) {
                     if (!confirm('You have unsaved changes. Discard and continue?')) {
                         fail();
-                        return;
                     }
                 }
-                succeed();
             });
         },
 

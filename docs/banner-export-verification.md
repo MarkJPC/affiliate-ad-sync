@@ -41,8 +41,8 @@ cd "/Users/ragpatel/affiliate-ad-sync/affiliate-ad-sync/admin-dashboard" && php 
 5. Validate row quality:
 
 - `weight` is positive.
-- `imagetype` is empty for affiliate ads (only set for uploaded images in AdRotate).
-- `image_url` is empty for affiliate ads (AdRotate requires it empty when `imagetype` is not `dropdown`; the image is embedded in `bannercode`).
+- `imagetype` is `dropdown` when `image_url` is populated; empty when `image_url` is empty. AdRotate requires these two fields to be in sync.
+- When `imagetype` is `dropdown`, `bannercode` contains `%asset%` instead of the raw image URL in `<img src>`. AdRotate replaces `%asset%` with the `image_url` value at render time.
 - `enable_stats` and other flags are strict `Y`/`N`.
 - `schedule_end` is greater than `schedule_start`.
 - `geo_*` fields are present.

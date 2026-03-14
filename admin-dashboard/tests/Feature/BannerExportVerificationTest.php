@@ -227,7 +227,7 @@ class BannerExportVerificationTest extends TestCase
 
         $mapped = array_combine($payload['headers'], $payload['rows'][0]);
         $this->assertSame('Ad 2001', $mapped['advert_name']);
-        $this->assertSame('html', $mapped['imagetype']);
+        $this->assertSame('', $mapped['imagetype']);
         $this->assertSame(2, $mapped['weight']);
         $this->assertSame('N', $mapped['enable_stats']);
         $this->assertSame('Y', $mapped['autodelete']);
@@ -241,6 +241,68 @@ class BannerExportVerificationTest extends TestCase
         $this->assertSame('a:0:{}', $mapped['geo_countries']);
         $this->assertSame(100, $mapped['schedule_start']);
         $this->assertSame(2650941780, $mapped['schedule_end']);
+    }
+
+    public function test_banner_export_uses_dropdown_asset_mode_when_image_url_present(): void
+    {
+        DB::table('placements')->insert([
+            ['site_id' => 1, 'width' => 300, 'height' => 250, 'is_active' => 1],
+        ]);
+
+        DB::table('v_exportable_ads')->insert([
+            [
+                'ad_id' => 3001,
+                'advertiser_id' => 15,
+                'advertiser_name' => 'Delta',
+                'network' => 'flexoffers',
+                'site_id' => 1,
+                'site_domain' => 'example.com',
+                'advert_name' => 'Delta 300x250',
+                'bannercode' => '<a href="http://track.example.com/click"><img src="http://cdn.example.com/banner.jpg" /></a>',
+                'imagetype' => '',
+                'image_url' => 'http://cdn.example.com/banner.jpg',
+                'width' => 300,
+                'height' => 250,
+                'final_weight' => 5,
+                'enable_stats' => 'Y',
+                'show_everyone' => 'Y',
+                'show_desktop' => 'Y',
+                'show_mobile' => 'Y',
+                'show_tablet' => 'Y',
+                'show_ios' => 'Y',
+                'show_android' => 'Y',
+                'autodelete' => 'Y',
+                'autodisable' => 'N',
+                'budget' => 0,
+                'click_rate' => 0,
+                'impression_rate' => 0,
+                'state_required' => 'N',
+                'geo_cities' => 'a:0:{}',
+                'geo_states' => 'a:0:{}',
+                'geo_countries' => 'a:0:{}',
+                'schedule_start' => 0,
+                'schedule_end' => 2650941780,
+            ],
+        ]);
+
+        $contract = ExportFilterService::normalize([
+            'site_id' => 1,
+            'export_type' => 'banner',
+        ]);
+
+        $payload = app(ExportEngineService::class)->buildDownloadPayload($contract, 'example.com');
+
+        $this->assertCount(1, $payload['rows']);
+
+        $mapped = array_combine($payload['headers'], $payload['rows'][0]);
+
+        // image_url present → dropdown asset mode
+        $this->assertSame('dropdown', $mapped['imagetype']);
+        $this->assertSame('http://cdn.example.com/banner.jpg', $mapped['image_url']);
+
+        // bannercode should have %asset% instead of raw image URL in src
+        $this->assertStringContainsString('src=&quot;%asset%&quot;', $mapped['bannercode']);
+        $this->assertStringNotContainsString('src=&quot;http://cdn.example.com/banner.jpg&quot;', $mapped['bannercode']);
     }
 
     private function createExportSchema(): void
